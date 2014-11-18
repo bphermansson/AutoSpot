@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Raspo
+AutoSpot
 Patrik Hermansson 2014
 
 Based on "shell.py" from Pyspotify examples, https://pyspotify.mopidy.com/en/latest/
@@ -52,6 +52,7 @@ selPlaylist = 0
 
 Config = ConfigParser.ConfigParser()
 try: 
+	print "Load settings"
 	Config.read("settings")
 except: 
 	print "Settings file not found"
@@ -103,6 +104,7 @@ class Commander(cmd.Cmd):
 	# Create audio sink
         try:
             self.audio_driver = spotify.AlsaSink(self.session)
+	    print "Audio ok" 
         except ImportError:
             self.logger.warning(
                 'No audio sink found; audio playback unavailable.')
@@ -111,17 +113,19 @@ class Commander(cmd.Cmd):
 	if self.session.connection.state is spotify.ConnectionState.LOGGED_IN:
 		print "Logged in"
 	else :
-		print "Not logged in"		
-		#self.session.login('phermansson', 'MciaS96DL1962', remember_me=True)
+		print "Not logged in"	
+		# Login		
 		global username
 		global password
 		self.session.login(username, password, remember_me=True)
 
-		#self.logged_in.wait()
-		#while self.session.connection.state is spotify.ConnectionState.LOGGED_OUT:
-		#	dummy=0
-		#print "Logged in!"
+		self.logged_in.wait()
+		while self.session.connection.state is spotify.ConnectionState.LOGGED_OUT:
+			pass
+		print "Logged in!"
 		
+	if self.session.connection.state is spotify.ConnectionState.LOGGED_OUT:
+		print "Login failed"
 	# Get user playlists
 	username = self.session.user_name
 	print "Current user: " + username
@@ -472,7 +476,7 @@ class Commander(cmd.Cmd):
         if not self.logged_in.is_set():
             self.logger.warning('You must be logged in to search')
             return
-        try:
+        try:	
             result = self.session.search(query)
             result.load()
         except spotify.Error as e:
@@ -489,7 +493,8 @@ class Commander(cmd.Cmd):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    
-	
-    Commander().cmdloop()
+	logging.basicConfig(level=logging.INFO)
+	#try: 
+	Commander().cmdloop()
+	#except KeyboardInterrupt:
+	#	print "Bye!"
