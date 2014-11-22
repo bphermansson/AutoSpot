@@ -4,6 +4,8 @@
 AutoSpot
 Patrik Hermansson 2014
 
+Gittest
+
 Based on "shell.py" from Pyspotify examples, https://pyspotify.mopidy.com/en/latest/
 
 TODO:
