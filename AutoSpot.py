@@ -273,7 +273,7 @@ class Commander(cmd.Cmd):
 	print "Uri: " + usersplaylists[2][int(list)]	
 	uri = usersplaylists[2][int(list)]
 	
-	global trackindex
+	global trackindex 
 	trackindex=0
 	
 	playlist = self.session.get_playlist(uri)
