@@ -478,10 +478,16 @@ class Commander(cmd.Cmd):
 	def on_logged_in(self, session, dummy):
 		pass
 		#print "We received a 'on_logged_in'"
-	
+def showinfo(list):
+	print "Time!"
 		
 if __name__ == '__main__':
 	logging.basicConfig(level=logging.INFO)
+	
+	wakeCall = threading.Timer(10, showinfo("self"))
+	#Start timer thread
+	wakeCall.start()
+	
 	try: 
 		Commander().cmdloop()
 	except KeyboardInterrupt:
