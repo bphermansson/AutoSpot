@@ -107,9 +107,9 @@ class Commander(cmd.Cmd):
 		print "There are " + str(len(container)) + " playlists."	
 
 		print "Container:" + str(container[1])
-		
+		 
 		pl = str(container[1]).split("'")
-		print "First pl is: " + pl[1]
+		#print "First pl is: " + pl[1]
 		
 		# Find index of current playlist
 		c=0
