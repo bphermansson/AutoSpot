@@ -6,7 +6,7 @@ import logging
 import threading
 import sys
 import unicodedata
-
+import datetime
 import spotify
 
 # To load config file
@@ -27,6 +27,15 @@ class Commander(cmd.Cmd):
 	logger = logging.getLogger('shell.commander')
 
 	def __init__(self):
+		print "Welcome to Autospot \nCommands:"
+		print "next - Next track"
+		print "prev - Previous track"
+		print "nextpl - Next playlist"
+		print "prevpl - Previous track"
+		print "set_offline - Make current playlist available offline"
+		print "offstatus - Check offline status for current playlist\n"
+		
+		print "Let\'s start by checking your audio subsystem."
 		cmd.Cmd.__init__(self)
 		self.logged_in = threading.Event()
 		self.logged_out = threading.Event()
@@ -50,7 +59,18 @@ class Commander(cmd.Cmd):
 			'No audio sink found; audio playback unavailable.')
 
 		# Load settings
+		global nouri
+		global notrack
+		global savedtrack
+		nouri = 0
+		notrack = 0
 		self.do_read_settings("dummy")
+		if nouri == 1:
+			print "No playlist saved, we use your latest playlist instead."
+		if notrack == 1:
+			print "No track saved, we use the first track. "
+			
+		print "You must be logged in to Spotify"
 		
 		if self.session.remembered_user_name:
 			# There are a remembered user
@@ -79,8 +99,8 @@ class Commander(cmd.Cmd):
 			sys.exit()
 		# Last played playlist
 		global uri
-		print "Last playlist:" + uri
-		print "Last track: " + savedtrack
+		#print "Last playlist:" + uri
+		#print "Last track: " + savedtrack
 		
 		pl = self.session.playlist_container
 		pl.load()
@@ -101,15 +121,19 @@ class Commander(cmd.Cmd):
 		# Wait until playlists has loaded
 		while True:
 			if cloaded == 1:
-				print "Break"
+				#print "Break"
 				break
 		
-		print "There are " + str(len(container)) + " playlists."	
+		print "You have " + str(len(container)) + " playlists."	
 
-		print "Container:" + str(container[1])
+		#print "Container:" + str(container[1])
 		 
 		pl = str(container[1]).split("'")
-		#print "First pl is: " + pl[1]
+		
+		if nouri == 1:
+			#print "First pl is: " + pl[1]
+			# No playlist saved - use users first playlist
+			uri = pl[1]
 		
 		# Find index of current playlist
 		c=0
@@ -121,10 +145,10 @@ class Commander(cmd.Cmd):
 				#print str(c)
 		except:
 			print "Error - last playlist not found"
-			self.system.exit()
+			sys.exit()
 		# Adjust count
 		c-=1
-		print "Last playlist index is : " + str(c)
+		#print "Last playlist index is : " + str(c)
 		global playlistindex
 		playlistindex = c
 		
@@ -132,15 +156,24 @@ class Commander(cmd.Cmd):
 		global playlist
 		playlist = self.session.get_playlist(uri)
 		curplaylist =  unicodedata.normalize('NFKD', playlist.name).encode('ascii','ignore')	
-		print "Playlist name: " + curplaylist
+		
+		# Available offline?
+		offline = playlist.offline_status
+		ofstat=""
+		if offline==1:
+			ofstat = "*"
+		
+		print "Last playlist name: " + curplaylist + ofstat + " (\'*\' means available offline)"
+		
 		playlist.load().name
 		while not (playlist.is_loaded):
 			pass
 			
-		print str(uri) + " is loaded"
+		#print str(uri) + " is loaded"
 		
 		#print "Playlist loaded (" + str(playlist) + ")" 
 		
+		"""
 		offline = playlist.offline_status
 		
 		if offline == 0:
@@ -151,8 +184,7 @@ class Commander(cmd.Cmd):
 			print "Download in progress"
 		if offline == 3:
 			print "Waiting for download"
-				
-		#print "Offline: " + str(playlist.offline_status)
+		"""
 		
 		#print playlist.tracks
 		
@@ -160,7 +192,7 @@ class Commander(cmd.Cmd):
 		cplaylist = str(playlist.tracks).split(",")
 		global nooftracks
 		nooftracks = str(len(cplaylist))
-		print "There are " + nooftracks + " tracks."	
+		print "There are " + nooftracks + " tracks in this playlist."	
 		# Adjust nooftracks. trackindex starts at 0, nooftracks from 1.
 		
 		inooftracks = int(nooftracks) 
@@ -173,30 +205,38 @@ class Commander(cmd.Cmd):
 		cmptrack = track[1]
 		#print cmptrack
 		
-		print "savedtrack: " + savedtrack
+		
+		if notrack:
+			savedtrack = cmptrack
+
+		#print "savedtrack: " + savedtrack
 		
 		c=0
 		try: 
 			while savedtrack != cmptrack:
 				track = str(cplaylist[c]).split("'")
 				cmptrack = track[1]
-				print str(c) + "-" + cmptrack
+				#print str(c) + "-" + cmptrack
 				c+=1
 		except:
 			pass
 		# Adjust value
 		c-=1
-		print "Real track index = " + str(c)
+		#print "Real track index = " + str(c)
 		global trackindex
 		trackindex=c
 		
-		print "Trackindex: " + str(trackindex)
+		#print "Trackindex: " + str(trackindex)
 		
 		global ttpsreal
 		ttpsreal = savedtrack
+		
+		print "All ok - lets play!"
+		
 		self.do_play()
 		
 	def do_set_offline(self, list):
+		"Set playlist offline"
 		global playlist
 		print "Pl to set offline: " + str(playlist)
 		print "Offline: " + str(playlist.offline_status)   
@@ -208,6 +248,7 @@ class Commander(cmd.Cmd):
 			playlist.set_offline_mode(offline=False)
 		
 	def do_offstatus(self,list):
+		"Offline status"
 		print "Downloaded: " + str(playlist.offline_download_completed) + "%"
 		 
 		offline = playlist.offline_status
@@ -222,30 +263,38 @@ class Commander(cmd.Cmd):
 			print "Waiting for download"
 
 	def do_nextpl(self, list):
+		"Next playlist"
 		global playlistindex
 		global container
 		global playlist
-		print "Current playlistindex: " + str(playlistindex)
+		#print "Current playlistindex: " + str(playlistindex)
 		playlistindex+=1
 		
 		pl = str(container[playlistindex]).split("'")
-		print "Next pl is: (" + str(playlistindex) + ") - " + pl[1]
+		#print "Next pl is: (" + str(playlistindex) + ") - " + pl[1]
 		
 		playlist = self.session.get_playlist(pl[1])
 		curplaylist =  unicodedata.normalize('NFKD', playlist.name).encode('ascii','ignore')	
-		print "Playlist name: " + curplaylist
+		
+		# Available offline?
+		offline = playlist.offline_status
+		ofstat=""
+		if offline==1:
+			ofstat = "*"
+		
+		print "Playlist name: " + curplaylist + ofstat
 		
 		# Find first track in new playlist
 		playlist.load().name
 		while not (playlist.is_loaded):
 			pass
-		print "Playlist loaded"
+		#print "Playlist loaded"
 		
 		# Get first track of new playlist
-		print str(playlist.tracks[0])
+		#print str(playlist.tracks[0])
 		firsttrack = str(playlist.tracks[0])
 		firsttrackar = firsttrack.split("'")
-		print "First track of new list: " + firsttrackar[1]
+		#print "First track of new list: " + firsttrackar[1]
 		global ttpsreal
 		ttpsreal = firsttrackar[1]
 		global trackindex
@@ -254,24 +303,32 @@ class Commander(cmd.Cmd):
 		realuri = str(playlist)
 		ruri = realuri.split("'")
 		uri = ruri[1]
-		print "In nextpl: uri=" + uri
+		#print "In nextpl: uri=" + uri
 		#uri = playlist
 		# ... and play it
 		self.do_play()
 
 
 	def do_prevpl(self, list):
+		"Previous playlist"
 		global playlistindex
 		global playlist
-		print "Current playlistindex: " + str(playlistindex)
+		#print "Current playlistindex: " + str(playlistindex)
 		playlistindex-=1
 		
 		pl = str(container[playlistindex]).split("'")
-		print "Prev pl is: " + pl[1]
+		#print "Prev pl is: " + pl[1]
 		
 		playlist = self.session.get_playlist(pl[1])
 		curplaylist =  unicodedata.normalize('NFKD', playlist.name).encode('ascii','ignore')	
-		print "Playlist name: " + curplaylist
+		
+		# Available offline?
+		offline = playlist.offline_status
+		ofstat=""
+		if offline==1:
+			ofstat = "*"
+		
+		print "Playlist name: " + curplaylist + ofstat
 		
 		# Find first track in new playlist
 		playlist.load().name
@@ -280,10 +337,10 @@ class Commander(cmd.Cmd):
 		print "Playlist loaded"
 		
 		# Get first track of new playl
-		print str(playlist.tracks[0])
+		#print str(playlist.tracks[0])
 		firsttrack = str(playlist.tracks[0])
 		firsttrackar = firsttrack.split("'")
-		print "First track of new list: " + firsttrackar[1]
+		#print "First track of new list: " + firsttrackar[1]
 		global ttpsreal
 		ttpsreal = firsttrackar[1]
 		global trackindex
@@ -292,14 +349,14 @@ class Commander(cmd.Cmd):
 		realuri = str(playlist)
 		ruri = realuri.split("'")
 		uri = ruri[1]
-		print "In prevpl: uri=" + uri
+		#print "In prevpl: uri=" + uri
 		#uri = playlist
 		# ... and play it
 		self.do_play()
 		
 	def do_play(self):
 		global ttpsreal
-		print "ttpsreal: " + str(ttpsreal) 
+		#print "ttpsreal: " + str(ttpsreal) 
 		track = self.session.get_track(ttpsreal)
 		
 		#curartist = unicodedata.normalize('NFKD', track.artists).encode('ascii','ignore')	
@@ -309,17 +366,22 @@ class Commander(cmd.Cmd):
 		artist = self.session.get_artist(curartistreal)
 		
 		curtrack =  unicodedata.normalize('NFKD', track.name).encode('ascii','ignore')	
-		print artist.load().name + " - " + curtrack
+		print "Now playing: " + artist.load().name + " - " + curtrack
 		track.load().name
 		self.session.player.load(track)
 		while not (track.is_loaded):
 			pass
-		print "Track loaded"
+		#print "Track loaded"
 		
 		self.session.player.play()
 
+		# Get & print track duration
 		dur = track.duration
-		print "Duration: " + str(dur)
+		d = datetime.timedelta(milliseconds=dur)
+		strd = str(d)
+		strdm = strd.split(":", 1)
+		#print "Duration: " + str(dur)
+		print "Track length: " + str(strdm[1])
 
 		# Move to end to test next track functions
 		#seekto = dur - 5000
@@ -340,6 +402,7 @@ class Commander(cmd.Cmd):
 			Config.read("settings")
 		except: 
 			print "Settings file not found"
+			system.exit()
 		#print Config.sections()
 		try: 
 			options = Config.options("Spotify")
@@ -359,13 +422,17 @@ class Commander(cmd.Cmd):
 			try: 
 				uri = Config.get("CurrentTrack", "playlist")
 			except: 
-				print "No uri saved"
-				uri = "spotify:user:phermansson:playlist:7JaJFymSwbFcceatOd40Af"
+				#print "No uri saved"
+				global nouri
+				nouri = 1
+				#uri = "spotify:user:phermansson:playlist:7JaJFymSwbFcceatOd40Af"
 			try:
 				savedtrack = Config.get("CurrentTrack", "track")
 			except:
-				print "No track saved"
-				savedtrack = "spotify:track:583jvp9iPtaOphRa74h0A8"
+				#print "No track saved"
+				global notrack
+				notrack = 1
+				#savedtrack = "spotify:track:583jvp9iPtaOphRa74h0A8"
 				
 			#global trackindex
 			#trackindex = int(Config.get("CurrentTrack", "trackindex"))
@@ -389,8 +456,9 @@ class Commander(cmd.Cmd):
 		temp = container.load()
 		#print container.is_loaded
 		
-		print "Loaded pls"
+		#print "Loaded pls"
 		
+	"""
 	def do_whoami(self, line):
 		"whoami"
 		if self.logged_in.is_set():
@@ -403,9 +471,10 @@ class Commander(cmd.Cmd):
 			self.logger.info(
 			'I am not logged in, but I may be %s',
 			self.session.remembered_user)
+	"""
 	def on_container_loaded(self, session):
 		global cloaded
-		print "Container loaded"
+		#print "Container loaded"
 		cloaded = 1
 	def on_connection_state_changed(self, session):
 		if session.connection.state is spotify.ConnectionState.LOGGED_IN:
@@ -423,6 +492,7 @@ class Commander(cmd.Cmd):
 		self.do_next(self)
 		
 	def do_next(self,line):
+		"Next track"
 		global trackindex
 		global playlist		
 		global ttpsreal
@@ -444,6 +514,7 @@ class Commander(cmd.Cmd):
 			trackindex = 0
 			self.playnext()
 	def do_prev(self,line):
+		"Previous track"
 		global trackindex
 		global playlist		
 		global ttpsreal
@@ -484,9 +555,11 @@ def showinfo(list):
 if __name__ == '__main__':
 	logging.basicConfig(level=logging.INFO)
 	
-	wakeCall = threading.Timer(10, showinfo("self"))
+	# Timer function for status update
+	# Do we need this?
+	#wakeCall = threading.Timer(10, showinfo("self"))
 	#Start timer thread
-	wakeCall.start()
+	#wakeCall.start()
 	
 	try: 
 		Commander().cmdloop()
