@@ -8,7 +8,6 @@ import sys
 import unicodedata
 import datetime
 import spotify
-
 # To load config file
 import ConfigParser
 
