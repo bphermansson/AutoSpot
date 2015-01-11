@@ -495,9 +495,9 @@ class Commander(cmd.Cmd):
         cloaded = 1
 
     def on_end_of_track(self, session):
-        #global trackindex
-        #global tracks
-        #global nooftracks
+        # global trackindex
+        # global tracks
+        # global nooftracks
 
         print "End of track"
         self.do_next(self)
