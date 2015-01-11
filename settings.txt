@@ -2,8 +2,8 @@
 autoplay = y
 
 [Spotify]
-username = 
-pass = 
+username = phermansson
+pass = MciaS96DL1962
 
 [CurrentTrack]
 
