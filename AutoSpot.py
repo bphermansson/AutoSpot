@@ -22,9 +22,9 @@ selPlaylist = 0
 
 
 class Commander(cmd.Cmd):
-    doc_header = 'Commands'
-    prompt = 'spotify> '
-    logger = logging.getLogger('shell.commander')
+    # doc_header = 'Commands'
+    # prompt = 'spotify> '
+    # logger = logging.getLogger('shell.commander')
 
     def __init__(self):
         print "Welcome to Autospot \nCommands:"
