@@ -17,9 +17,14 @@ sudo make install prefix=/usr/local
 
 -Get a Binary Spotify App key from https://devaccount.spotify.com/my-account/keys/
 and store it in the current directory.
--Rename "settings_editthis" to "settings".
--Edit settings and add your Spotify credentials.
--Run. 
+
+Install Autospot:
+sudo python setup.py install
+
+-Rename "settings_editthis" to "settings.txt".
+-Edit settings.txt and add your Spotify credentials.
+-Run ('python autospot.py').
+
 
 
 Package built with instructions from https://packaging.python.org/en/latest/distributing.html#setup-for-project-distributors
