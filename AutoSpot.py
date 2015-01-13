@@ -428,17 +428,22 @@ class Commander(cmd.Cmd):
 
             try:
                 uri = config.get("CurrentTrack", "playlist")
+                print "Get playlist..."
+                if len(uri)==0:
+                    print "No uri saved"
+                    global nouri
+                    nouri = 1
             except:
-                print "No uri saved"
-                global nouri
-                nouri = 1
                 #uri = "spotify:user:phermansson:playlist:7JaJFymSwbFcceatOd40Af"
+                pass
             try:
                 savedtrack = config.get("CurrentTrack", "track")
+                if len(savedtrack)==0:
+                    print "No track saved"
+                    global notrack
+                    notrack = 1
             except:
-                print "No track saved"
-                global notrack
-                notrack = 1
+                pass
             #savedtrack = "spotify:track:583jvp9iPtaOphRa74h0A8"
 
             #global trackindex
