@@ -18,6 +18,11 @@ global username, password, autoplay
 global curtrack
 global selPlaylist
 global nooftracks
+global uri
+global ttpsreal
+ttpsreal=""
+global savedtrack
+savedtrack=""
 selPlaylist = 0
 
 
@@ -60,11 +65,15 @@ class Commander(cmd.Cmd):
 
         # Load settings
         global nouri
+        nouri=0
         global notrack
+        notrack=0
         global savedtrack
-        nouri = 0
-        notrack = 0
+
         self.do_read_settings("dummy")
+
+# TODO Add 'nouri=1' and 'notrack=1' to settings_editthis
+
         if nouri == 1:
             print "No playlist saved, we use your latest playlist instead."
         if notrack == 1:
@@ -99,8 +108,8 @@ class Commander(cmd.Cmd):
             sys.exit()
         # Last played playlist
         global uri
-        #print "Last playlist:" + uri
-        #print "Last track: " + savedtrack
+        print "Last playlist:" + uri
+        print "Last track: " + savedtrack
 
         pl = self.session.playlist_container
         pl.load()
@@ -131,7 +140,7 @@ class Commander(cmd.Cmd):
         pl = str(container[1]).split("'")
 
         if nouri == 1:
-            #print "First pl is: " + pl[1]
+            print "First pl is: " + pl[1]
             # No playlist saved - use users first playlist
             uri = pl[1]
 
@@ -145,7 +154,7 @@ class Commander(cmd.Cmd):
             #print str(c)
         except:
             print "Error - last playlist not found"
-            sys.exit()
+	    sys.exit()
         # Adjust count
         c -= 1
         #print "Last playlist index is : " + str(c)
@@ -407,6 +416,8 @@ class Commander(cmd.Cmd):
         print config.sections()
 
         try:
+            global uri
+            uri=""
             options = config.options("Spotify")
             global username
             try:
@@ -422,17 +433,13 @@ class Commander(cmd.Cmd):
                 print "Autoplay: " + autoplay
             except:
                 print "No autoplay setting found"
-            global uri
+
             global savedtrack
             global playlistnr
 
             try:
                 uri = config.get("CurrentTrack", "playlist")
                 print "Get playlist..."
-                if len(uri)==0:
-                    print "No uri saved"
-                    global nouri
-                    nouri = 1
             except:
                 #uri = "spotify:user:phermansson:playlist:7JaJFymSwbFcceatOd40Af"
                 pass
@@ -457,6 +464,10 @@ class Commander(cmd.Cmd):
             print "Error reading settings"
             sys.exit(0)
 
+        if len(uri)==0:
+            print "No uri saved"
+            global nouri
+            nouri = 1
 
     def do_loaduserspl(self, line):
         print "Load users playlists"
@@ -464,7 +475,7 @@ class Commander(cmd.Cmd):
         container = self.session.playlist_container
         # while not (container.is_loaded):
         #	pass
-        #print "Playlists loaded"
+        print "Playlists loaded"
         #print container.is_loaded
         temp = container.load()
 
@@ -592,7 +603,7 @@ if __name__ == '__main__':
     try:
         Commander().cmdloop()
     except KeyboardInterrupt:
-        global uri, ttpsreal, trackindex
+        #global uri, ttpsreal, trackindex
         print "Current playlist " + str(uri)
         print "Current track: " + str(ttpsreal)
         #print "Track index: " + str(trackindex)
