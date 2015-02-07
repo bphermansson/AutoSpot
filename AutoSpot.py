@@ -18,6 +18,7 @@ global username, password, autoplay
 global curtrack
 global selPlaylist
 global nooftracks
+global container
 selPlaylist = 0
 
 
@@ -116,19 +117,24 @@ class Commander(cmd.Cmd):
         global container
         global cloaded
         self.do_loaduserspl(self)
+        print "C:"
+        print container[0]
 
-        cloaded = 0
+
+        #cloaded = 0
         # Wait until playlists has loaded
-        while True:
-            if cloaded == 1:
+        #while True:
+        #    if cloaded == 1:
                 # print "Playlists loaded"
-                break
+        #        break
 
         print "You have " + str(len(container)) + " playlists."
 
         #print "Container:" + str(container[1])
 
         pl = str(container[1]).split("'")
+
+        print container[0]
 
         if nouri == 1:
             #print "First pl is: " + pl[1]
@@ -145,7 +151,12 @@ class Commander(cmd.Cmd):
             #print str(c)
         except:
             print "Error - last playlist not found"
-            sys.exit()
+            # Use last added list instead
+            c=0
+            uri = container[0]
+            print "We use pl "
+            print uri
+            #sys.exit()
         # Adjust count
         c -= 1
         #print "Last playlist index is : " + str(c)
@@ -462,11 +473,15 @@ class Commander(cmd.Cmd):
         print "Load users playlists"
         global container
         container = self.session.playlist_container
-        # while not (container.is_loaded):
-        #	pass
+        while not (container.is_loaded):
+        	pass
         #print "Playlists loaded"
         #print container.is_loaded
-        temp = container.load()
+        #print container.load()
+
+        container.load()
+        print "Container is loaded"
+        print container[0];
 
     def on_connection_state_changed(self, session):
         if session.connection.state is spotify.ConnectionState.LOGGED_IN:

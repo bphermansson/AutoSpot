@@ -7,9 +7,11 @@ import threading
 import sys
 import unicodedata
 import datetime
+import signal
 import spotify
 # To load config file
 import ConfigParser
+# import RPi.GPIO as GPIO
 
 global curplaylist
 global playlist
@@ -19,6 +21,7 @@ global curtrack
 global selPlaylist
 global nooftracks
 global uri
+uri=""
 global ttpsreal
 ttpsreal=""
 global savedtrack
@@ -38,9 +41,9 @@ class Commander(cmd.Cmd):
         print "nextpl - Next playlist"
         print "prevpl - Previous track"
         print "set_offline - Make current playlist available offline"
+        print "Exit - Save status, stop & exit"
         print "offstatus - Check offline status for current playlist\n"
 
-        print "Let\'s start by checking your audio subsystem."
         cmd.Cmd.__init__(self)
         self.logged_in = threading.Event()
         self.logged_out = threading.Event()
@@ -55,7 +58,9 @@ class Commander(cmd.Cmd):
             spotify.SessionEvent.END_OF_TRACK, self.on_end_of_track)
         self.session.on(
             spotify.SessionEvent.LOGGED_IN, self.on_logged_in)
+
         # Create audio sink
+        print "Let\'s start by checking your audio subsystem."
         try:
             self.audio_driver = spotify.AlsaSink(self.session)
             print "Audio ok"
@@ -69,7 +74,6 @@ class Commander(cmd.Cmd):
         global notrack
         notrack=0
         global savedtrack
-
         self.do_read_settings("dummy")
 
 # TODO Add 'nouri=1' and 'notrack=1' to settings_editthis
@@ -83,6 +87,7 @@ class Commander(cmd.Cmd):
 
         if self.session.remembered_user_name:
             # There are a remembered user
+            print "I remember you!"
             self.session.relogin()
             self.logged_in.wait()
         else:
@@ -104,7 +109,7 @@ class Commander(cmd.Cmd):
         #else :
 
         if self.session.connection.state is spotify.ConnectionState.LOGGED_OUT:
-            print "Login failed"
+            print "Login failed, check your settings"
             sys.exit()
         # Last played playlist
         global uri
@@ -126,35 +131,39 @@ class Commander(cmd.Cmd):
         global cloaded
         self.do_loaduserspl(self)
 
+
         cloaded = 0
         # Wait until playlists has loaded
-        while True:
-            if cloaded == 1:
-                # print "Playlists loaded"
-                break
+        #while True:
+        #    if cloaded == 1:
+        #        print "Playlists loaded, cloaded=1"
+        #        break
 
         print "You have " + str(len(container)) + " playlists."
 
-        #print "Container:" + str(container[1])
+        print "Container:" + str(container[1])
 
         pl = str(container[1]).split("'")
 
         if nouri == 1:
+            print "nouri=1"
             print "First pl is: " + pl[1]
             # No playlist saved - use users first playlist
             uri = pl[1]
 
+        print uri
+        #print str(pl[1])
         # Find index of current playlist
         c = 0
         try:
             while uri != str(pl[1]):
-                #print str(c) + "-" + uri + "-" + str(pl[1])
+                print str(c) + "-" + uri + "-" + str(pl[1])
                 pl = str(container[c]).split("'")
                 c += 1
-            #print str(c)
+                print str(c)
         except:
             print "Error - last playlist not found"
-	    sys.exit()
+        #sys.exit()
         # Adjust count
         c -= 1
         #print "Last playlist index is : " + str(c)
@@ -405,7 +414,7 @@ class Commander(cmd.Cmd):
         # username=<Spotify username>
         # pass=<Spotify password>
 
-        print "Load"
+        #print "Load"
         config = ConfigParser.ConfigParser()
         try:
             print "Load settings!"
@@ -417,7 +426,7 @@ class Commander(cmd.Cmd):
 
         try:
             global uri
-            uri=""
+            uri = ""
             options = config.options("Spotify")
             global username
             try:
@@ -468,16 +477,23 @@ class Commander(cmd.Cmd):
             print "No uri saved"
             global nouri
             nouri = 1
+        else:
+            nouri = 0
 
     def do_loaduserspl(self, line):
         print "Load users playlists"
         global container
         container = self.session.playlist_container
-        # while not (container.is_loaded):
-        #	pass
-        print "Playlists loaded"
+        #while not (container.is_loaded):
+        #   pass
         #print container.is_loaded
-        temp = container.load()
+        #print "In loaduserspl, playlists loaded"
+        #print container.is_loaded
+        print "Load pl"
+        container.load(20)
+        print "Ok"
+        print "Container loaded="
+        print container.is_loaded
 
     def on_connection_state_changed(self, session):
         if session.connection.state is spotify.ConnectionState.LOGGED_IN:
@@ -567,6 +583,10 @@ class Commander(cmd.Cmd):
             trackindex = 0
             self.playnext()
 
+    def do_exit(self, line):
+        "Stop music and exit"
+        print "Bye!"
+        cleanexit()
 
     def playnext(self):
         global trackindex
@@ -580,13 +600,29 @@ class Commander(cmd.Cmd):
         uri = str(ttpsreal)
         self.do_play()
 
-
-
-
 #print "We received a 'on_logged_in'"
 def showinfo(list):
     print "Time!"
 
+def cleanexit():
+    print "Do a clean exit"
+    print "Current playlist " + str(uri)
+    print "Current track: " + str(ttpsreal)
+    # Save info
+    from ConfigParser import SafeConfigParser
+    config = SafeConfigParser()
+    config.read('settings.txt')
+    # Is there a CurrentTrack section already?
+    try:
+        config.add_section('CurrentTrack')
+    except:
+        pass
+    config.set('CurrentTrack', 'playlist', str(uri))
+    config.set('CurrentTrack', 'track', str(ttpsreal))
+    with open('settings.txt', 'w') as f:
+        config.write(f)
+    print "Bye!"
+    sys.exit()
 
 if __name__ == '__main__':
     #logging.basicConfig(level=logging.INFO)
@@ -603,30 +639,4 @@ if __name__ == '__main__':
     try:
         Commander().cmdloop()
     except KeyboardInterrupt:
-        #global uri, ttpsreal, trackindex
-        print "Current playlist " + str(uri)
-        print "Current track: " + str(ttpsreal)
-        #print "Track index: " + str(trackindex)
-
-        #session.player.stop()
-
-
-        # Save info
-        from ConfigParser import SafeConfigParser
-
-        config = SafeConfigParser()
-        config.read('settings.txt')
-        # Is there a CurrentTrack section already?
-        try:
-            config.add_section('CurrentTrack')
-        except:
-            pass
-        config.set('CurrentTrack', 'playlist', str(uri))
-        config.set('CurrentTrack', 'track', str(ttpsreal))
-        #config.set('CurrentTrack', 'trackindex',  str(trackindex))
-
-        with open('settings.txt', 'w') as f:
-            config.write(f)
-
-        print "Bye!"
-        sys.exit()
+        cleanexit()
