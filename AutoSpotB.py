@@ -4,7 +4,7 @@
 # git commit -a
 # git push origin master
 
-# Uppdatera från Github
+# Update from Github
 #  git pull
 
 from __future__ import unicode_literals
@@ -35,6 +35,10 @@ global savedtrack
 savedtrack=""
 selPlaylist = 0
 
+# Null output for hiding output
+class NullDevice():
+    def write(self, s):
+        pass
 
 class Commander(cmd.Cmd):
     # doc_header = 'Commands'
@@ -94,7 +98,7 @@ class Commander(cmd.Cmd):
         print "You must be logged in to Spotify"
 
         if self.session.remembered_user_name:
-            # There are a remembered user
+            # There is a remembered user
             print "I remember you!"
             self.session.relogin()
             self.logged_in.wait()
@@ -500,8 +504,15 @@ class Commander(cmd.Cmd):
         #print "In loaduserspl, playlists loaded"
         #print container.is_loaded
         print "Load pl"
-        container.load()
-        while not (container.is_loaded):
+	# 'load' dont work if it aint stored or printed, so we store it in a temp variable 
+        
+	# Hide output
+	original_stdout = sys.stdout  # keep a reference to STDOUT
+	sys.stdout = NullDevice()
+	print container.load()
+        sys.stdout = original_stdout  # turn STDOUT back on
+	
+	while not (container.is_loaded):
            pass
 	print "Ok"
         print "Container loaded="
