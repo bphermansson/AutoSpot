@@ -1,5 +1,12 @@
 #!/usr/bin/env python
 
+# Upload changes to Github:
+# git commit -a
+# git push origin master
+
+# Uppdatera från Github
+#  git pull
+
 from __future__ import unicode_literals
 import cmd
 import logging
