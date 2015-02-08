@@ -59,9 +59,7 @@ class Commander(cmd.Cmd):
         self.session.on(
             spotify.SessionEvent.LOGGED_IN, self.on_logged_in)
 	
-	self.session.playlist_container.on(
-		spotify.PlaylistContainerEvent.CONTAINER_LOADED, container_loaded)
-	
+
         # Create audio sink
         print "Let\'s start by checking your audio subsystem."
         try:
@@ -110,9 +108,7 @@ class Commander(cmd.Cmd):
         # if self.session.connection.state is spotify.ConnectionState.LOGGED_IN:
         #	print "Logged in"
         #else :
-	def container_loaded(playlist_container):
-		print('---Playlist container loaded---')
-    
+	
         if self.session.connection.state is spotify.ConnectionState.LOGGED_OUT:
             print "Login failed, check your settings"
             sys.exit()
@@ -121,14 +117,17 @@ class Commander(cmd.Cmd):
         print "Last playlist:" + uri
         print "Last track: " + savedtrack
 
-        pl = self.session.playlist_container
-        pl.load()
-        #print "pl:" + str(pl)
+        # Necessary?
+	#pl = self.session.playlist_container
+        #pl.load()
+        
+	
+	#print "pl:" + str(pl)
 
         # Trigger for playlists loaded event
         # What to do when playlists are loaded?
-        pl.on(
-            spotify.PlaylistContainerEvent.CONTAINER_LOADED, self.on_container_loaded)
+        #pl.on(
+        #    spotify.PlaylistContainerEvent.CONTAINER_LOADED, self.on_container_loaded)
 
 
         # Load all users playlists
