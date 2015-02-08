@@ -58,7 +58,10 @@ class Commander(cmd.Cmd):
             spotify.SessionEvent.END_OF_TRACK, self.on_end_of_track)
         self.session.on(
             spotify.SessionEvent.LOGGED_IN, self.on_logged_in)
-
+	
+	self.session.playlist_container.on(
+		spotify.PlaylistContainerEvent.CONTAINER_LOADED, container_loaded)
+	
         # Create audio sink
         print "Let\'s start by checking your audio subsystem."
         try:
@@ -107,7 +110,9 @@ class Commander(cmd.Cmd):
         # if self.session.connection.state is spotify.ConnectionState.LOGGED_IN:
         #	print "Logged in"
         #else :
-
+	def container_loaded(playlist_container):
+		print('---Playlist container loaded---')
+    
         if self.session.connection.state is spotify.ConnectionState.LOGGED_OUT:
             print "Login failed, check your settings"
             sys.exit()
@@ -484,14 +489,15 @@ class Commander(cmd.Cmd):
         print "Load users playlists"
         global container
         container = self.session.playlist_container
-        #while not (container.is_loaded):
-        #   pass
+        
         #print container.is_loaded
         #print "In loaduserspl, playlists loaded"
         #print container.is_loaded
         print "Load pl"
-        container.load(20)
-        print "Ok"
+        container.load()
+        while not (container.is_loaded):
+           pass
+	print "Ok"
         print "Container loaded="
         print container.is_loaded
 
