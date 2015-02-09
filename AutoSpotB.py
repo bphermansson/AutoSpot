@@ -236,13 +236,15 @@ class Commander(cmd.Cmd):
 
         track = str(cplaylist[1]).split("'")
         cmptrack = track[1]
-        #print cmptrack
+        print "cmptrack: " + cmptrack
 
-
+	print "Notrack"
+	print notrack
         if notrack:
-            savedtrack = cmptrack
+		print "Notrack"
+		savedtrack = cmptrack
 
-        #print "savedtrack: " + savedtrack
+        print "savedtrack: " + savedtrack
 
         c = 0
         try:
@@ -389,7 +391,7 @@ class Commander(cmd.Cmd):
 
     def do_play(self):
         global ttpsreal
-        # print "ttpsreal: " + str(ttpsreal)
+        print "ttpsreal: " + str(ttpsreal)
         track = self.session.get_track(ttpsreal)
 
         #curartist = unicodedata.normalize('NFKD', track.artists).encode('ascii','ignore')
@@ -469,10 +471,7 @@ class Commander(cmd.Cmd):
                 pass
             try:
                 savedtrack = config.get("CurrentTrack", "track")
-                if len(savedtrack)==0:
-                    print "No track saved"
-                    global notrack
-                    notrack = 1
+
             except:
                 pass
             #savedtrack = "spotify:track:583jvp9iPtaOphRa74h0A8"
@@ -494,6 +493,10 @@ class Commander(cmd.Cmd):
             nouri = 1
         else:
             nouri = 0
+	if len(savedtrack)==0:
+		print "No track saved"
+		global notrack
+		notrack = 1
 
     def do_loaduserspl(self, line):
         print "Load users playlists"
