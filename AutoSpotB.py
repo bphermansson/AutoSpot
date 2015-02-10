@@ -19,6 +19,7 @@ import spotify
 # To load config file
 import ConfigParser
 # import RPi.GPIO as GPIO
+import urllib2
 
 global curplaylist
 global playlist
@@ -27,6 +28,7 @@ global username, password, autoplay
 global curtrack
 global selPlaylist
 global nooftracks
+global online
 global uri
 uri=""
 global ttpsreal
@@ -54,6 +56,12 @@ class Commander(cmd.Cmd):
         print "set_offline - Make current playlist available offline"
         print "Exit - Save status, stop & exit"
         print "offstatus - Check offline status for current playlist\n"
+	
+	online = internet_on()
+	if online == True:
+		onlinestatus="online"
+	else:
+		onlinestatus="offline"
 
         cmd.Cmd.__init__(self)
         self.logged_in = threading.Event()
@@ -201,6 +209,8 @@ class Commander(cmd.Cmd):
         playlist.load().name
         while not (playlist.is_loaded):
             pass
+	    
+	print "Rpi is " + str(onlinestatus)
 
         #print str(uri) + " is loaded"
 
@@ -270,6 +280,19 @@ class Commander(cmd.Cmd):
 
         self.do_play()
 
+    def do_listoffline(self, list):
+	print "You have " + str(len(container)) + " playlists."
+	c=0
+	for s in container:
+		#print str(container[c])
+		
+		pl = str(container[c]).split("'")
+		#print "Next pl is: (" + str(c) + ") - " + pl[1]
+		pl.load().name
+		offline = pl.offline_status
+		print offline
+		c+=1
+	    
     def do_set_offline(self, list):
         "Set playlist offline"
         global playlist
@@ -629,6 +652,13 @@ class Commander(cmd.Cmd):
 #print "We received a 'on_logged_in'"
 def showinfo(list):
     print "Time!"
+    
+def internet_on():
+    try:
+        response=urllib2.urlopen('http://74.125.228.100',timeout=20)
+        return True
+    except urllib2.URLError as err: pass
+    return False
 
 def cleanexit():
     print "Do a clean exit"
