@@ -48,74 +48,10 @@ class NullDevice():
     def write(self, s):
         pass
 
-def initApp():
+def initApp(self):
 	print "In initApp"
-	print "Welcome to Autospot \nCommands:"
 	
-	online = internet_on()
-	if online == True:
-		onlinestatus="online"
-	else:
-		onlinestatus="offline"
-	print "We are " + onlinestatus
 	
-	logged_in = threading.Event()
-	logged_out = threading.Event()
-	logged_out.set()
-	session = spotify.Session()
-	event_loop = spotify.EventLoop(session)
-	event_loop.start()
-	session.on(
-		spotify.SessionEvent.CONNECTION_STATE_UPDATED,
-		on_connection_state_changed)
-	session.on(
-		spotify.SessionEvent.END_OF_TRACK, on_end_of_track)
-	session.on(
-		spotify.SessionEvent.LOGGED_IN, on_logged_in)
-	
-	# Create audio sink
-        print "Let\'s start by checking your audio subsystem."
-        try:
-            audio_driver = spotify.AlsaSink(session)
-            print "Audio ok"
-        except ImportError:
-            logger.warning(
-                'No audio sink found; audio playback unavailable.')
-
-        # Load settings
-        global nouri
-        nouri=0
-        global notrack
-        notrack=0
-        global savedtrack
-        do_read_settings("dummy")
-	
-	# See if there are stored values
-	if nouri == 1:
-            print "No playlist saved, we use your latest playlist instead."
-        if notrack == 1:
-            print "No track saved, we use the first track. "
-
-        print "You must be logged in to Spotify"
-
-        if session.remembered_user_name:
-            # There is a remembered user
-            print "I remember you!"
-            session.relogin()
-            logged_in.wait()
-        else:
-            print "Not logged in"
-            # Login
-            global username
-            global password
-            session.login(username, password, remember_me=True)
-            logged_in.wait()
-            while session.connection.state is spotify.ConnectionState.LOGGED_OUT:
-                pass
-            print "Logged in!"
-
-        print "Logged in as " + session.user_name
-
         # Logged in?
         # if self.session.connection.state is spotify.ConnectionState.LOGGED_IN:
         #	print "Logged in"
@@ -142,137 +78,70 @@ def initApp():
         #    spotify.PlaylistContainerEvent.CONTAINER_LOADED, self.on_container_loaded)
 
 
-        # Load all users playlists
-        global container
-        global cloaded
-        self.do_loaduserspl(self)
 
-
-        cloaded = 0
         # Wait until playlists has loaded
         #while True:
         #    if cloaded == 1:
         #        print "Playlists loaded, cloaded=1"
         #        break
 
-        print "You have " + str(len(container)) + " playlists."
-
-        print "Container:" + str(container[1])
-
-        pl = str(container[1]).split("'")
-
-        if nouri == 1:
-            print "nouri=1"
-            print "First pl is: " + pl[1]
-            # No playlist saved - use users first playlist
-            uri = pl[1]
-
-        print uri
-        #print str(pl[1])
-        # Find index of current playlist
-        c = 0
-        try:
-            while uri != str(pl[1]):
-                print str(c) + "-" + uri + "-" + str(pl[1])
-                pl = str(container[c]).split("'")
-                c += 1
-                print str(c)
-        except:
-            print "Error - last playlist not found"
-        #sys.exit()
-        # Adjust count
-        c -= 1
-        #print "Last playlist index is : " + str(c)
-        global playlistindex
-        playlistindex = c
-
-        # Load last playlist
-        global playlist
-        playlist = self.session.get_playlist(uri)
-        curplaylist = unicodedata.normalize('NFKD', playlist.name).encode('ascii', 'ignore')
-
-        # Available offline?
-        offline = playlist.offline_status
-        ofstat = ""
-        if offline == 1:
-            ofstat = "*"
-
-        print "Last playlist name: " + curplaylist + ofstat + " (\'*\' means available offline)"
-
-        playlist.load().name
-        while not (playlist.is_loaded):
-            pass
-	    
-	print "Rpi is " + str(onlinestatus)
-
-        #print str(uri) + " is loaded"
-
-        #print "Playlist loaded (" + str(playlist) + ")"
-
-        """
-		offline = playlist.offline_status
-		
-		if offline == 0:
-			print "Not available offline"
-		if offline == 1:
-			print "Available offline"
-		if offline == 2:
-			print "Download in progress"
-		if offline == 3:
-			print "Waiting for download"
-		"""
-
-        #print playlist.tracks
-
-        # Count tracks
-        cplaylist = str(playlist.tracks).split(",")
-        global nooftracks
-        nooftracks = str(len(cplaylist))
-        print "There are " + nooftracks + " tracks in this playlist."
-        # Adjust nooftracks. trackindex starts at 0, nooftracks from 1.
-
-        inooftracks = int(nooftracks)
-        inooftracks -= 1
-        nooftracks = inooftracks
-
-        # Find track number in playlist
-
-        track = str(cplaylist[1]).split("'")
-        cmptrack = track[1]
-        print "cmptrack: " + cmptrack
-
-	print "Notrack"
-	print notrack
-        if notrack:
-		print "Notrack"
-		savedtrack = cmptrack
-
-        print "savedtrack: " + savedtrack
-
-        c = 0
-        try:
-            while savedtrack != cmptrack:
-                track = str(cplaylist[c]).split("'")
-                cmptrack = track[1]
-                #print str(c) + "-" + cmptrack
-                c += 1
-        except:
-            pass
-        # Adjust value
-        c -= 1
-        #print "Real track index = " + str(c)
-        global trackindex
-        trackindex = c
-
-        #print "Trackindex: " + str(trackindex)
-
+def do_play():
         global ttpsreal
-        ttpsreal = savedtrack
+        print "ttpsreal: " + str(ttpsreal)
+        track = session.get_track(ttpsreal)
 
-        print "All ok - lets play!"
+        #curartist = unicodedata.normalize('NFKD', track.artists).encode('ascii','ignore')
+        curartist = str(track.artists).split("'")
+        curartistreal = curartist[1]
+        #print "curartistreal: " + curartistreal
+        artist = session.get_artist(curartistreal)
 
-        self.do_play()
+        curtrack = unicodedata.normalize('NFKD', track.name).encode('ascii', 'ignore')
+        print "Now playing: " + artist.load().name + " - " + curtrack
+        track.load().name
+        session.player.load(track)
+        while not (track.is_loaded):
+            pass
+        #print "Track loaded"
 
+        session.player.play()
+
+        # Get & print track duration
+        dur = track.duration
+        d = datetime.timedelta(milliseconds=dur)
+        strd = str(d)
+        strdm = strd.split(":", 1)
+        #print "Duration: " + str(dur)
+        print "Track length: " + str(strdm[1])
+
+    # Move to end to test next track functions
+    # seekto = dur - 5000
+    #self.session.player.seek(seekto)
+
+ 
+
+def do_loaduserspl():
+        print "Load users playlists"
+        global container
+        container = session.playlist_container
+        
+        #print container.is_loaded
+        #print "In loaduserspl, playlists loaded"
+        #print container.is_loaded
+        print "Load pl"
+	# 'load' dont work if it aint stored or printed, so we store it in a temp variable 
+        
+	# Hide output
+	original_stdout = sys.stdout  # keep a reference to STDOUT
+	sys.stdout = NullDevice()
+	print container.load()
+        sys.stdout = original_stdout  # turn STDOUT back on
+	
+	while not (container.is_loaded):
+           pass
+	print "Ok"
+        print "Container loaded="
+        print container.is_loaded
 
 def do_read_settings(line):
         # Load & read configuration
@@ -352,11 +221,12 @@ def do_read_settings(line):
 
 def on_connection_state_changed(session):
         if session.connection.state is spotify.ConnectionState.LOGGED_IN:
-            self.logged_in.set()
-            self.logged_out.clear()
+		print "Logged in"
+		logged_in.set()
+		logged_out.clear()
         elif session.connection.state is spotify.ConnectionState.LOGGED_OUT:
-            self.logged_in.clear()
-        self.logged_out.set()
+		logged_in.clear()
+        logged_out.set()
 
 def on_end_of_track(session):
         # global trackindex
@@ -366,7 +236,7 @@ def on_end_of_track(session):
         print "End of track"
         self.do_next(self)
 
-def on_logged_in(session):
+def on_logged_in(session, dummy):
         pass
 	
 class Commander(cmd.Cmd):
@@ -543,62 +413,7 @@ class Commander(cmd.Cmd):
         # ... and play it
         self.do_play()
 
-    def do_play(self):
-        global ttpsreal
-        print "ttpsreal: " + str(ttpsreal)
-        track = self.session.get_track(ttpsreal)
-
-        #curartist = unicodedata.normalize('NFKD', track.artists).encode('ascii','ignore')
-        curartist = str(track.artists).split("'")
-        curartistreal = curartist[1]
-        #print "curartistreal: " + curartistreal
-        artist = self.session.get_artist(curartistreal)
-
-        curtrack = unicodedata.normalize('NFKD', track.name).encode('ascii', 'ignore')
-        print "Now playing: " + artist.load().name + " - " + curtrack
-        track.load().name
-        self.session.player.load(track)
-        while not (track.is_loaded):
-            pass
-        #print "Track loaded"
-
-        self.session.player.play()
-
-        # Get & print track duration
-        dur = track.duration
-        d = datetime.timedelta(milliseconds=dur)
-        strd = str(d)
-        strdm = strd.split(":", 1)
-        #print "Duration: " + str(dur)
-        print "Track length: " + str(strdm[1])
-
-    # Move to end to test next track functions
-    # seekto = dur - 5000
-    #self.session.player.seek(seekto)
-
- 
-    def do_loaduserspl(self, line):
-        print "Load users playlists"
-        global container
-        container = self.session.playlist_container
-        
-        #print container.is_loaded
-        #print "In loaduserspl, playlists loaded"
-        #print container.is_loaded
-        print "Load pl"
-	# 'load' dont work if it aint stored or printed, so we store it in a temp variable 
-        
-	# Hide output
-	original_stdout = sys.stdout  # keep a reference to STDOUT
-	sys.stdout = NullDevice()
-	print container.load()
-        sys.stdout = original_stdout  # turn STDOUT back on
-	
-	while not (container.is_loaded):
-           pass
-	print "Ok"
-        print "Container loaded="
-        print container.is_loaded
+  
 
     def on_connection_state_changed(self, session):
         if session.connection.state is spotify.ConnectionState.LOGGED_IN:
@@ -759,8 +574,208 @@ if __name__ == '__main__':
     try:
         #Commander().cmdloop()
 	#init = initSpot.initApp()
-	initApp()	
+	#initApp(self)	
 	
+	print "Welcome to Autospot \nCommands:"
+	
+	online = internet_on()
+	if online == True:
+		onlinestatus="online"
+	else:
+		onlinestatus="offline"
+	print "We are " + onlinestatus
+	
+	logged_in = threading.Event()
+	logged_out = threading.Event()
+	logged_out.set()
+	session = spotify.Session()
+	event_loop = spotify.EventLoop(session)
+	event_loop.start()
+	session.on(
+		spotify.SessionEvent.CONNECTION_STATE_UPDATED,
+		on_connection_state_changed)
+	session.on(
+		spotify.SessionEvent.END_OF_TRACK, on_end_of_track)
+	session.on(
+		spotify.SessionEvent.LOGGED_IN, on_logged_in)
+	
+	# Create audio sink
+        print "Let\'s start by checking your audio subsystem."
+        try:
+            audio_driver = spotify.AlsaSink(session)
+            print "Audio ok"
+        except ImportError:
+            logger.warning(
+                'No audio sink found; audio playback unavailable.')
+
+        # Load settings
+        global nouri
+        nouri=0
+        global notrack
+        notrack=0
+        global savedtrack
+	savedtrack=0
+        do_read_settings("dummy")
+	
+	# See if there are stored values
+	if nouri == 1:
+            print "No playlist saved, we use your latest playlist instead."
+        if notrack == 1:
+            print "No track saved, we use the first track. "
+
+        print "You must be logged in to Spotify"
+
+        if session.remembered_user_name:
+            # There is a remembered user
+            print "I remember you!"
+            session.relogin()
+            logged_in.wait()
+        else:
+            print "Not logged in"
+            # Login
+            global username
+            global password
+            session.login(username, password, remember_me=True)
+            logged_in.wait()
+            while session.connection.state is spotify.ConnectionState.LOGGED_OUT:
+                pass
+            print "Logged in!"
+
+        print "Logged in as " + session.user_name
+	
+	if session.connection.state is spotify.ConnectionState.LOGGED_OUT:
+            print "Login failed, check your settings"
+            sys.exit()
+        # Last played playlist
+        global uri
+        print "Last playlist:" + uri
+        print "Last track: " + savedtrack
+	
+        # Load all users playlists
+        global container
+        global cloaded
+        do_loaduserspl()
+
+        cloaded = 0
+
+	print "You have " + str(len(container)) + " playlists."
+        print "Container:" + str(container[1])
+
+        pl = str(container[1]).split("'")
+
+        if nouri == 1:
+            print "nouri=1"
+            print "First pl is: " + pl[1]
+            # No playlist saved - use users first playlist
+            uri = pl[1]
+
+        print uri
+        #print str(pl[1])
+        # Find index of current playlist
+        c = 0
+        try:
+            while uri != str(pl[1]):
+                print str(c) + "-" + uri + "-" + str(pl[1])
+                pl = str(container[c]).split("'")
+                c += 1
+                print str(c)
+        except:
+            print "Error - last playlist not found"
+        #sys.exit()
+        # Adjust count
+        c -= 1
+        #print "Last playlist index is : " + str(c)
+        global playlistindex
+        playlistindex = c
+
+        # Load last playlist
+        global playlist
+        playlist = session.get_playlist(uri)
+        curplaylist = unicodedata.normalize('NFKD', playlist.name).encode('ascii', 'ignore')
+
+        # Available offline?
+        offline = playlist.offline_status
+        ofstat = ""
+        if offline == 1:
+            ofstat = "*"
+
+        print "Last playlist name: " + curplaylist + ofstat + " (\'*\' means available offline)"
+
+        playlist.load().name
+        while not (playlist.is_loaded):
+            pass
+	    
+	print "Rpi is " + str(onlinestatus)
+
+        #print str(uri) + " is loaded"
+
+        #print "Playlist loaded (" + str(playlist) + ")"
+
+        """
+		offline = playlist.offline_status
+		
+		if offline == 0:
+			print "Not available offline"
+		if offline == 1:
+			print "Available offline"
+		if offline == 2:
+			print "Download in progress"
+		if offline == 3:
+			print "Waiting for download"
+		"""
+
+        #print playlist.tracks
+
+        # Count tracks
+        cplaylist = str(playlist.tracks).split(",")
+        global nooftracks
+        nooftracks = str(len(cplaylist))
+        print "There are " + nooftracks + " tracks in this playlist."
+        # Adjust nooftracks. trackindex starts at 0, nooftracks from 1.
+
+        inooftracks = int(nooftracks)
+        inooftracks -= 1
+        nooftracks = inooftracks
+
+        # Find track number in playlist
+
+        track = str(cplaylist[1]).split("'")
+        cmptrack = track[1]
+        print "cmptrack: " + cmptrack
+
+	print "Notrack"
+	print notrack
+        if notrack:
+		print "Notrack"
+		savedtrack = cmptrack
+
+        print "savedtrack: " + savedtrack
+
+        c = 0
+        try:
+            while savedtrack != cmptrack:
+                track = str(cplaylist[c]).split("'")
+                cmptrack = track[1]
+                #print str(c) + "-" + cmptrack
+                c += 1
+        except:
+            pass
+        # Adjust value
+        c -= 1
+        #print "Real track index = " + str(c)
+        global trackindex
+        trackindex = c
+
+        #print "Trackindex: " + str(trackindex)
+
+        global ttpsreal
+        ttpsreal = savedtrack
+
+        print "All ok - lets play!"
+
+        do_play()
+
+
 	while True:
 		if (GPIO.input(17)==0):
 			print("Button Up Pressed")
