@@ -51,6 +51,7 @@ class NullDevice():
 def initApp():
 	print "In initApp"
 	print "Welcome to Autospot \nCommands:"
+	
 	online = internet_on()
 	if online == True:
 		onlinestatus="online"
@@ -59,64 +60,26 @@ def initApp():
 	print "We are " + onlinestatus
 	
 	logged_in = threading.Event()
-	self.logged_out = threading.Event()
-	self.logged_out.set()
-	self.session = spotify.Session()
-	self.event_loop = spotify.EventLoop(self.session)
-	self.event_loop.start()
-	self.session.on(
+	logged_out = threading.Event()
+	logged_out.set()
+	session = spotify.Session()
+	event_loop = spotify.EventLoop(session)
+	event_loop.start()
+	session.on(
 		spotify.SessionEvent.CONNECTION_STATE_UPDATED,
-		self.on_connection_state_changed)
-	self.session.on(
-		spotify.SessionEvent.END_OF_TRACK, self.on_end_of_track)
-	self.session.on(
-		spotify.SessionEvent.LOGGED_IN, self.on_logged_in)
-
-
-class Commander(cmd.Cmd):
-    # doc_header = 'Commands'
-    # prompt = 'spotify> '
-    # logger = logging.getLogger('shell.commander')
-
-    def __init__(self):
-        print "Welcome to Autospot \nCommands:"
-        print "next - Next track"
-        print "prev - Previous track"
-        print "nextpl - Next playlist"
-        print "prevpl - Previous track"
-        print "set_offline - Make current playlist available offline"
-        print "Exit - Save status, stop & exit"
-        print "offstatus - Check offline status for current playlist\n"
+		on_connection_state_changed)
+	session.on(
+		spotify.SessionEvent.END_OF_TRACK, on_end_of_track)
+	session.on(
+		spotify.SessionEvent.LOGGED_IN, on_logged_in)
 	
-	online = internet_on()
-	if online == True:
-		onlinestatus="online"
-	else:
-		onlinestatus="offline"
-
-        cmd.Cmd.__init__(self)
-        self.logged_in = threading.Event()
-        self.logged_out = threading.Event()
-        self.logged_out.set()
-        self.session = spotify.Session()
-        self.event_loop = spotify.EventLoop(self.session)
-        self.event_loop.start()
-        self.session.on(
-            spotify.SessionEvent.CONNECTION_STATE_UPDATED,
-            self.on_connection_state_changed)
-        self.session.on(
-            spotify.SessionEvent.END_OF_TRACK, self.on_end_of_track)
-        self.session.on(
-            spotify.SessionEvent.LOGGED_IN, self.on_logged_in)
-	
-
-        # Create audio sink
+	# Create audio sink
         print "Let\'s start by checking your audio subsystem."
         try:
-            self.audio_driver = spotify.AlsaSink(self.session)
+            audio_driver = spotify.AlsaSink(session)
             print "Audio ok"
         except ImportError:
-            self.logger.warning(
+            logger.warning(
                 'No audio sink found; audio playback unavailable.')
 
         # Load settings
@@ -125,41 +88,40 @@ class Commander(cmd.Cmd):
         global notrack
         notrack=0
         global savedtrack
-        self.do_read_settings("dummy")
-
-# TODO Add 'nouri=1' and 'notrack=1' to settings_editthis
-
-        if nouri == 1:
+        do_read_settings("dummy")
+	
+	# See if there are stored values
+	if nouri == 1:
             print "No playlist saved, we use your latest playlist instead."
         if notrack == 1:
             print "No track saved, we use the first track. "
 
         print "You must be logged in to Spotify"
 
-        if self.session.remembered_user_name:
+        if session.remembered_user_name:
             # There is a remembered user
             print "I remember you!"
-            self.session.relogin()
-            self.logged_in.wait()
+            session.relogin()
+            logged_in.wait()
         else:
             print "Not logged in"
             # Login
             global username
             global password
-            self.session.login(username, password, remember_me=True)
-            self.logged_in.wait()
-            while self.session.connection.state is spotify.ConnectionState.LOGGED_OUT:
+            session.login(username, password, remember_me=True)
+            logged_in.wait()
+            while session.connection.state is spotify.ConnectionState.LOGGED_OUT:
                 pass
             print "Logged in!"
 
-        print "Logged in as " + self.session.user_name
+        print "Logged in as " + session.user_name
 
         # Logged in?
         # if self.session.connection.state is spotify.ConnectionState.LOGGED_IN:
         #	print "Logged in"
         #else :
 	
-        if self.session.connection.state is spotify.ConnectionState.LOGGED_OUT:
+        if session.connection.state is spotify.ConnectionState.LOGGED_OUT:
             print "Login failed, check your settings"
             sys.exit()
         # Last played playlist
@@ -311,6 +273,144 @@ class Commander(cmd.Cmd):
 
         self.do_play()
 
+
+def do_read_settings(line):
+        # Load & read configuration
+        # Settings are stored in a file called "settings".
+        # Example:
+        # [Spotify]
+        # username=<Spotify username>
+        # pass=<Spotify password>
+
+        #print "Load"
+        config = ConfigParser.ConfigParser()
+        try:
+            print "Load settings!"
+            config.read("settings.txt")
+        except:
+            print "Settings file not found"
+            sys.exit()
+        print config.sections()
+
+        try:
+            global uri
+            uri = ""
+            options = config.options("Spotify")
+            global username
+            try:
+                username = config.get("Spotify", "username")
+            except:
+                print "No username given"
+            global password
+            password = config.get("Spotify", "pass")
+            print "Credentials: " + username + ":" + password
+            global autoplay
+            try:
+                autoplay = config.get("General", "autoplay")
+                print "Autoplay: " + autoplay
+            except:
+                print "No autoplay setting found"
+
+            global savedtrack
+            global playlistnr
+
+            try:
+                uri = config.get("CurrentTrack", "playlist")
+                print "Get playlist..."
+            except:
+                #uri = "spotify:user:phermansson:playlist:7JaJFymSwbFcceatOd40Af"
+                pass
+            try:
+                savedtrack = config.get("CurrentTrack", "track")
+
+            except:
+                pass
+            #savedtrack = "spotify:track:583jvp9iPtaOphRa74h0A8"
+
+            #global trackindex
+            #trackindex = int(Config.get("CurrentTrack", "trackindex"))
+            #try:
+            #	playlistnr = int(Config.get("playlist", "playlistnr"))
+            #except:
+            #	"No playlistnumbed saved"
+            #	playlistnr = 0
+        except:
+            print "Error reading settings"
+            sys.exit(0)
+
+        if len(uri)==0:
+            print "No uri saved"
+            global nouri
+            nouri = 1
+        else:
+            nouri = 0
+	if len(savedtrack)==0:
+		print "No track saved"
+		global notrack
+		notrack = 1
+
+
+def on_connection_state_changed(session):
+        if session.connection.state is spotify.ConnectionState.LOGGED_IN:
+            self.logged_in.set()
+            self.logged_out.clear()
+        elif session.connection.state is spotify.ConnectionState.LOGGED_OUT:
+            self.logged_in.clear()
+        self.logged_out.set()
+
+def on_end_of_track(session):
+        # global trackindex
+        # global tracks
+        # global nooftracks
+
+        print "End of track"
+        self.do_next(self)
+
+def on_logged_in(session):
+        pass
+	
+class Commander(cmd.Cmd):
+    # doc_header = 'Commands'
+    # prompt = 'spotify> '
+    # logger = logging.getLogger('shell.commander')
+
+    def __init__(self):
+        print "Welcome to Autospot \nCommands:"
+        print "next - Next track"
+        print "prev - Previous track"
+        print "nextpl - Next playlist"
+        print "prevpl - Previous track"
+        print "set_offline - Make current playlist available offline"
+        print "Exit - Save status, stop & exit"
+        print "offstatus - Check offline status for current playlist\n"
+	
+	online = internet_on()
+	if online == True:
+		onlinestatus="online"
+	else:
+		onlinestatus="offline"
+
+        cmd.Cmd.__init__(self)
+        self.logged_in = threading.Event()
+        self.logged_out = threading.Event()
+        self.logged_out.set()
+        self.session = spotify.Session()
+        self.event_loop = spotify.EventLoop(self.session)
+        self.event_loop.start()
+        self.session.on(
+            spotify.SessionEvent.CONNECTION_STATE_UPDATED,
+            self.on_connection_state_changed)
+        self.session.on(
+            spotify.SessionEvent.END_OF_TRACK, self.on_end_of_track)
+        self.session.on(
+            spotify.SessionEvent.LOGGED_IN, self.on_logged_in)
+	
+
+
+
+# TODO Add 'nouri=1' and 'notrack=1' to settings_editthis
+
+ 
     def do_listoffline(self, list):
 	print "You have " + str(len(container)) + " playlists."
 	c=0
@@ -476,82 +576,7 @@ class Commander(cmd.Cmd):
     # seekto = dur - 5000
     #self.session.player.seek(seekto)
 
-    def do_read_settings(self, line):
-
-        # Load & read configuration
-        # Settings are stored in a file called "settings".
-        # Example:
-        # [Spotify]
-        # username=<Spotify username>
-        # pass=<Spotify password>
-
-        #print "Load"
-        config = ConfigParser.ConfigParser()
-        try:
-            print "Load settings!"
-            config.read("settings.txt")
-        except:
-            print "Settings file not found"
-            sys.exit()
-        print config.sections()
-
-        try:
-            global uri
-            uri = ""
-            options = config.options("Spotify")
-            global username
-            try:
-                username = config.get("Spotify", "username")
-            except:
-                print "No username given"
-            global password
-            password = config.get("Spotify", "pass")
-            print "Credentials: " + username + ":" + password
-            global autoplay
-            try:
-                autoplay = config.get("General", "autoplay")
-                print "Autoplay: " + autoplay
-            except:
-                print "No autoplay setting found"
-
-            global savedtrack
-            global playlistnr
-
-            try:
-                uri = config.get("CurrentTrack", "playlist")
-                print "Get playlist..."
-            except:
-                #uri = "spotify:user:phermansson:playlist:7JaJFymSwbFcceatOd40Af"
-                pass
-            try:
-                savedtrack = config.get("CurrentTrack", "track")
-
-            except:
-                pass
-            #savedtrack = "spotify:track:583jvp9iPtaOphRa74h0A8"
-
-            #global trackindex
-            #trackindex = int(Config.get("CurrentTrack", "trackindex"))
-            #try:
-            #	playlistnr = int(Config.get("playlist", "playlistnr"))
-            #except:
-            #	"No playlistnumbed saved"
-            #	playlistnr = 0
-        except:
-            print "Error reading settings"
-            sys.exit(0)
-
-        if len(uri)==0:
-            print "No uri saved"
-            global nouri
-            nouri = 1
-        else:
-            nouri = 0
-	if len(savedtrack)==0:
-		print "No track saved"
-		global notrack
-		notrack = 1
-
+ 
     def do_loaduserspl(self, line):
         print "Load users playlists"
         global container
