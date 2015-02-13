@@ -16,6 +16,7 @@ import unicodedata
 import datetime
 import signal
 import spotify
+import curses
 # To load config file
 import ConfigParser
 # import RPi.GPIO as GPIO
@@ -234,17 +235,17 @@ def on_end_of_track(session):
         # global nooftracks
 
         print "End of track"
-        self.do_next(self)
+        do_next()
 
-def on_logged_in(session, dummy):
+def on_logged_in(session):
         pass
 	
-class Commander(cmd.Cmd):
+#class Commander(cmd.Cmd):
     # doc_header = 'Commands'
     # prompt = 'spotify> '
     # logger = logging.getLogger('shell.commander')
-
-    def __init__(self):
+"""
+   def __init__(self):
         print "Welcome to Autospot \nCommands:"
         print "next - Next track"
         print "prev - Previous track"
@@ -275,13 +276,13 @@ class Commander(cmd.Cmd):
         self.session.on(
             spotify.SessionEvent.LOGGED_IN, self.on_logged_in)
 	
-
+"""
 
 
 # TODO Add 'nouri=1' and 'notrack=1' to settings_editthis
 
  
-    def do_listoffline(self, list):
+def do_listoffline(self, list):
 	print "You have " + str(len(container)) + " playlists."
 	c=0
 	for s in container:
@@ -294,7 +295,7 @@ class Commander(cmd.Cmd):
 		print offline
 		c+=1
 	    
-    def do_set_offline(self, list):
+def do_set_offline(self, list):
         "Set playlist offline"
         global playlist
         print "Pl to set offline: " + str(playlist)
@@ -306,7 +307,7 @@ class Commander(cmd.Cmd):
             print "Removed from harddisk"
             playlist.set_offline_mode(offline=False)
 
-    def do_offstatus(self, list):
+def do_offstatus(self, list):
         "Offline status"
         print "Downloaded: " + str(playlist.offline_download_completed) + "%"
 
@@ -321,7 +322,7 @@ class Commander(cmd.Cmd):
         if offline == 3:
             print "Waiting for download"
 
-    def do_nextpl(self, list):
+def do_nextpl():
         "Next playlist"
         global playlistindex
         global container
@@ -332,7 +333,7 @@ class Commander(cmd.Cmd):
         pl = str(container[playlistindex]).split("'")
         #print "Next pl is: (" + str(playlistindex) + ") - " + pl[1]
 
-        playlist = self.session.get_playlist(pl[1])
+        playlist = session.get_playlist(pl[1])
         curplaylist = unicodedata.normalize('NFKD', playlist.name).encode('ascii', 'ignore')
 
         # Available offline?
@@ -365,10 +366,10 @@ class Commander(cmd.Cmd):
         #print "In nextpl: uri=" + uri
         #uri = playlist
         # ... and play it
-        self.do_play()
+        do_play()
 
 
-    def do_prevpl(self, list):
+def do_prevpl():
         "Previous playlist"
         global playlistindex
         global playlist
@@ -378,7 +379,7 @@ class Commander(cmd.Cmd):
         pl = str(container[playlistindex]).split("'")
         #print "Prev pl is: " + pl[1]
 
-        playlist = self.session.get_playlist(pl[1])
+        playlist = session.get_playlist(pl[1])
         curplaylist = unicodedata.normalize('NFKD', playlist.name).encode('ascii', 'ignore')
 
         # Available offline?
@@ -411,22 +412,22 @@ class Commander(cmd.Cmd):
         #print "In prevpl: uri=" + uri
         #uri = playlist
         # ... and play it
-        self.do_play()
+        do_play()
 
   
 
-    def on_connection_state_changed(self, session):
+def on_connection_state_changed(session):
         if session.connection.state is spotify.ConnectionState.LOGGED_IN:
-            self.logged_in.set()
-            self.logged_out.clear()
+            logged_in.set()
+            logged_out.clear()
         elif session.connection.state is spotify.ConnectionState.LOGGED_OUT:
-            self.logged_in.clear()
-        self.logged_out.set()
+            logged_in.clear()
+        logged_out.set()
 
     # print container.is_loaded
     #print "Loaded pls"
 
-    """
+"""
 	def do_whoami(self, line):
 		"whoami"
 		if self.logged_in.is_set():
@@ -439,14 +440,14 @@ class Commander(cmd.Cmd):
 			self.logger.info(
 			'I am not logged in, but I may be %s',
 			self.session.remembered_user)
-	"""
+"""
 
-    def on_container_loaded(self, session):
+def on_container_loaded(session):
         global cloaded
         #print "Container loaded"
         cloaded = 1
 
-    def on_end_of_track(self, session):
+def on_end_of_track(session):
         # global trackindex
         # global tracks
         # global nooftracks
@@ -454,11 +455,11 @@ class Commander(cmd.Cmd):
         print "End of track"
         self.do_next(self)
 
-    def on_logged_in(self, session, dummy):
+def on_logged_in(session, dummy):
         pass
 
 
-    def do_next(self, line):
+def do_next():
         "Next track"
         global trackindex
         global playlist
@@ -472,17 +473,17 @@ class Commander(cmd.Cmd):
             print "Next track"
             trackindex += 1
             print "Trackindex: " + str(trackindex)
-            self.playnext()
+            playnext()
 
         else:
             print "End of playlist"
             # Stop playback
-            self.session.player.play(False)
+            session.player.play(False)
             trackindex = 0
-            self.playnext()
+            playnext()
 
 
-    def do_prev(self, line):
+def do_prev():
         "Previous track"
         global trackindex
         global playlist
@@ -494,31 +495,32 @@ class Commander(cmd.Cmd):
             print "Next track"
             trackindex -= 1
             print "Trackindex: " + str(trackindex)
-            self.playnext()
+            playnext()
 
         else:
             print "Beginning of playlist"
             # Stop playback
-            self.session.player.play(False)
+            session.player.play(False)
             trackindex = 0
-            self.playnext()
+            playnext()
 
-    def do_exit(self, line):
+def do_exit():
         "Stop music and exit"
         print "Bye!"
         cleanexit()
 
-    def playnext(self):
-        global trackindex
-        global ttpsreal
-        global playlist
-        print trackindex
-        ttp = str(playlist.tracks[trackindex])
-        ttps = ttp.split("'")
-        ttpsreal = ttps[1]
-        print "Track to play: " + str(ttpsreal)
-        uri = str(ttpsreal)
-        self.do_play()
+def playnext():
+	global trackindex
+	global ttpsreal
+	global playlist
+	print trackindex
+	ttp = str(playlist.tracks[trackindex])
+	ttps = ttp.split("'")
+	ttpsreal = ttps[1]
+	print "Track to play: " + str(ttpsreal)
+	stdscr.addstr("Track:"+ str(ttpsreal) + "\n")
+	uri = str(ttpsreal)
+	do_play()
 
 #print "We received a 'on_logged_in'"
 def showinfo(list):
@@ -532,6 +534,10 @@ def internet_on():
     return False
 
 def cleanexit():
+    curses.nocbreak()
+    stdscr.keypad(0)
+    curses.echo()
+    curses.endwin()
     print "Do a clean exit"
     print "Current playlist " + str(uri)
     print "Current track: " + str(ttpsreal)
@@ -775,8 +781,20 @@ if __name__ == '__main__':
 
         do_play()
 
+	# Use curses to be able ro detect key press
+	#init the curses screen
+	stdscr = curses.initscr()
+	#use cbreak to not require a return key press
+	curses.cbreak()
+	quit=False
 
-	while True:
+	stdscr.addstr("q-quit\nn-next track\np-prev track\nq-prevpl\nw-nextpl\n")
+
+	stdscr.addstr("Track:"+ str(ttpsreal) + "\n")
+
+
+	while quit !=True:
+		# Check physical buttons
 		if (GPIO.input(17)==0):
 			print("Button Up Pressed")
 		if (GPIO.input(27)==0):
@@ -786,8 +804,22 @@ if __name__ == '__main__':
 		if (GPIO.input(24)==0):
 			print("Button down Pressed")
 		if (GPIO.input(25)==0):
-			print("Button left Pressed")		
+			print("Button left Pressed")
+
+		# Check key presses
+		c = stdscr.getch()
+		print curses.keyname(c),
+		if curses.keyname(c)=="q" :
+			quit=True
+		if curses.keyname(c)=="n" :
+			playnext()
+		if curses.keyname(c)=="p" :
+			do_prev()
+		if curses.keyname(c)=="q" :
+			do_prevpl()	
+		if curses.keyname(c)=="w" :
+			do_nextpl()
 		time.sleep(0.1)
-		
+	cleanexit()	
     except KeyboardInterrupt:
         cleanexit()
