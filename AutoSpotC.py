@@ -86,9 +86,9 @@ def initApp(self):
         #        print "Playlists loaded, cloaded=1"
         #        break
 
-def do_play():
+def do_play(stdscr):
         global ttpsreal
-        print "ttpsreal: " + str(ttpsreal)
+        #print "ttpsreal: " + str(ttpsreal)
         track = session.get_track(ttpsreal)
 
         #curartist = unicodedata.normalize('NFKD', track.artists).encode('ascii','ignore')
@@ -98,7 +98,8 @@ def do_play():
         artist = session.get_artist(curartistreal)
 
         curtrack = unicodedata.normalize('NFKD', track.name).encode('ascii', 'ignore')
-        print "Now playing: " + artist.load().name + " - " + curtrack
+        stdscr.addstr("Now playing: " + artist.load().name + " - " + curtrack +"\n")
+	
         track.load().name
         session.player.load(track)
         while not (track.is_loaded):
@@ -113,7 +114,7 @@ def do_play():
         strd = str(d)
         strdm = strd.split(":", 1)
         #print "Duration: " + str(dur)
-        print "Track length: " + str(strdm[1])
+        stdscr.addstr("Track length: " + str(strdm[1]) + "\n")
 
     # Move to end to test next track functions
     # seekto = dur - 5000
@@ -322,7 +323,7 @@ def do_offstatus(self, list):
         if offline == 3:
             print "Waiting for download"
 
-def do_nextpl():
+def do_nextpl(stdscr):
         "Next playlist"
         global playlistindex
         global container
@@ -369,7 +370,7 @@ def do_nextpl():
         do_play()
 
 
-def do_prevpl():
+def do_prevpl(stdscr):
         "Previous playlist"
         global playlistindex
         global playlist
@@ -388,13 +389,14 @@ def do_prevpl():
         if offline == 1:
             ofstat = "*"
 
-        print "Playlist name: " + curplaylist + ofstat
+	stdscr.addstr("Playlist name: " + curplaylist + ofstat)
+        #print "Playlist name: " + curplaylist + ofstat
 
         # Find first track in new playlist
         playlist.load().name
         while not (playlist.is_loaded):
             pass
-        print "Playlist loaded"
+        stdscr.addstr("Playlist loaded")
 
         # Get first track of new playl
         #print str(playlist.tracks[0])
@@ -453,37 +455,37 @@ def on_end_of_track(session):
         # global nooftracks
 
         print "End of track"
-        self.do_next(self)
+        do_next(self)
 
 def on_logged_in(session, dummy):
         pass
 
 
-def do_next():
+def do_next(stdscr):
         "Next track"
         global trackindex
         global playlist
         global ttpsreal
         global nooftracks
         global uri
-        print "uri=" + str(uri)
+        #print "uri=" + str(uri)
 
         # Check if at end of playlist
         if trackindex < nooftracks:
-            print "Next track"
-            trackindex += 1
-            print "Trackindex: " + str(trackindex)
-            playnext()
-
+		stdscr.addstr("Next track, index: " + str(trackindex) )
+		#print "Next track"
+		trackindex += 1
+		#print "Trackindex: " + str(trackindex)
+		playnext()
         else:
-            print "End of playlist"
-            # Stop playback
-            session.player.play(False)
-            trackindex = 0
-            playnext()
+		stdscr.addstr("End of playlist")
+		#print "End of playlist"
+		# Stop playback
+		session.player.play(False)
+		trackindex = 0
+		playnext()
 
-
-def do_prev():
+def do_prev(stdscr):
         "Previous track"
         global trackindex
         global playlist
@@ -504,23 +506,23 @@ def do_prev():
             trackindex = 0
             playnext()
 
-def do_exit():
+def do_exit(stdscr):
         "Stop music and exit"
         print "Bye!"
         cleanexit()
 
-def playnext():
+def playnext(stdscr):
 	global trackindex
 	global ttpsreal
 	global playlist
-	print trackindex
+	#print trackindex
 	ttp = str(playlist.tracks[trackindex])
 	ttps = ttp.split("'")
 	ttpsreal = ttps[1]
-	print "Track to play: " + str(ttpsreal)
+	#print "Track to play: " + str(ttpsreal)
 	stdscr.addstr("Track:"+ str(ttpsreal) + "\n")
 	uri = str(ttpsreal)
-	do_play()
+	do_play(stdscr)
 
 #print "We received a 'on_logged_in'"
 def showinfo(list):
@@ -779,47 +781,51 @@ if __name__ == '__main__':
 
         print "All ok - lets play!"
 
-        do_play()
-
+        
 	# Use curses to be able ro detect key press
 	#init the curses screen
 	stdscr = curses.initscr()
 	#use cbreak to not require a return key press
 	curses.cbreak()
-	quit=False
 
 	stdscr.addstr("q-quit\nn-next track\np-prev track\nq-prevpl\nw-nextpl\n")
-
 	stdscr.addstr("Track:"+ str(ttpsreal) + "\n")
 
+	# Start playback
+	stdscr.addstr("Start play\n")
+	do_play(stdscr)
+
+
+	quit=False
 
 	while quit !=True:
 		# Check physical buttons
+		"""
 		if (GPIO.input(17)==0):
-			print("Button Up Pressed")
+			print("Button Up Pressed\n")
 		if (GPIO.input(27)==0):
-			print("Button Pressed")
+			print("Button Pressed\n")
 		if (GPIO.input(22)==0):
-			print("Button right Pressed")
+			print("Button right Pressed\n")
 		if (GPIO.input(24)==0):
-			print("Button down Pressed")
+			print("Button down Pressed\n")
 		if (GPIO.input(25)==0):
-			print("Button left Pressed")
-
+			print("Button left Pressed\n")
+		"""
 		# Check key presses
 		c = stdscr.getch()
 		print curses.keyname(c),
 		if curses.keyname(c)=="q" :
 			quit=True
 		if curses.keyname(c)=="n" :
-			playnext()
+			playnext(stdscr)
 		if curses.keyname(c)=="p" :
-			do_prev()
+			do_prev(stdscr)
 		if curses.keyname(c)=="q" :
-			do_prevpl()	
+			do_prevpl(stdscr)	
 		if curses.keyname(c)=="w" :
-			do_nextpl()
+			do_nextpl(stdscr)
 		time.sleep(0.1)
-	cleanexit()	
+	cleanexit(stdscr)	
     except KeyboardInterrupt:
-        cleanexit()
+        cleanexit(stdscr)
