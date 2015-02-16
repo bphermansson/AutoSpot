@@ -44,6 +44,9 @@ global savedtrack
 savedtrack=""
 selPlaylist = 0
 
+global pausstate
+pausstate=True
+
 # Null output for hiding output
 class NullDevice():
     def write(self, s):
@@ -96,21 +99,29 @@ def do_play(stdscr):
         curartistreal = curartist[1]
         #print "curartistreal: " + curartistreal
         artist = session.get_artist(curartistreal)
-
         curtrack = unicodedata.normalize('NFKD', track.name).encode('ascii', 'ignore')
+
+        # Get playlist name	
+        playlist = session.get_playlist(pl[1])
+        curplaylist = unicodedata.normalize('NFKD', playlist.name).encode('ascii', 'ignore')
         
 	# Clear and print
 	stdscr.clear()
 	stdscr.addstr("Now playing: " + artist.load().name + " - " + curtrack +"\n")
 	stdscr.addstr("Trackindex: " + str(trackindex) + "\n")
+        stdscr.addstr("Playlist: " + str(curplaylist) + "\n")
 
         track.load().name
         session.player.load(track)
         while not (track.is_loaded):
             pass
-        #print "Track loaded"
+        print "Track loaded"
 
         session.player.play()
+
+        # Debug, wait for keypress
+	while stdscr.getch() == "":
+            pass
 
         # Get & print track duration
         dur = track.duration
@@ -377,7 +388,7 @@ def do_prevpl(stdscr):
         "Previous playlist"
         global playlistindex
         global playlist
-        # print "Current playlistindex: " + str(playlistindex)
+        stdscr.addstr ("Current playlistindex: " + str(playlistindex))
         playlistindex -= 1
 
         pl = str(container[playlistindex]).split("'")
@@ -386,6 +397,7 @@ def do_prevpl(stdscr):
         playlist = session.get_playlist(pl[1])
         curplaylist = unicodedata.normalize('NFKD', playlist.name).encode('ascii', 'ignore')
 
+        
         # Available offline?
         offline = playlist.offline_status
         ofstat = ""
@@ -405,7 +417,8 @@ def do_prevpl(stdscr):
         #print str(playlist.tracks[0])
         firsttrack = str(playlist.tracks[0])
         firsttrackar = firsttrack.split("'")
-        #print "First track of new list: " + firsttrackar[1]
+        stdscr.addstr("First track of new list: " + firsttrackar[1])
+
         global ttpsreal
         ttpsreal = firsttrackar[1]
         global trackindex
@@ -414,6 +427,11 @@ def do_prevpl(stdscr):
         realuri = str(playlist)
         ruri = realuri.split("'")
         uri = ruri[1]
+
+        # Debug, wait for keypress
+	while stdscr.getch() == "":
+            pass
+
         #print "In prevpl: uri=" + uri
         #uri = playlist
         # ... and play it
@@ -528,6 +546,17 @@ def playnext(stdscr):
 	uri = str(ttpsreal)
 	do_play(stdscr)
 
+def do_pause(stdscr):
+    global pausstate
+    if pausstate==False:
+   	stdscr.addstr("Pause")
+   	#session.player.pause()
+        pausstate = True
+    else:
+        stdscr.addstr("Play")
+        pausstate = False
+    session.player.play(pausstate)
+       	
 #print "We received a 'on_logged_in'"
 def showinfo(list):
     print "Time!"
@@ -619,6 +648,8 @@ if __name__ == '__main__':
         except ImportError:
             logger.warning(
                 'No audio sink found; audio playback unavailable.')
+
+	
 
         # Load settings
         global nouri
@@ -828,7 +859,9 @@ if __name__ == '__main__':
 			do_prevpl(stdscr)	
 		if curses.keyname(c)=="w" :
 			do_nextpl(stdscr)
-			
+	    	if curses.keyname(c)=="s" :
+                        do_pause(stdscr)
+                    	
 		time.sleep(0.1)
 	cleanexit(stdscr)	
     except KeyboardInterrupt:
