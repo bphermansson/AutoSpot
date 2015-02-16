@@ -98,8 +98,12 @@ def do_play(stdscr):
         artist = session.get_artist(curartistreal)
 
         curtrack = unicodedata.normalize('NFKD', track.name).encode('ascii', 'ignore')
-        stdscr.addstr("Now playing: " + artist.load().name + " - " + curtrack +"\n")
-	
+        
+	# Clear and print
+	stdscr.clear()
+	stdscr.addstr("Now playing: " + artist.load().name + " - " + curtrack +"\n")
+	stdscr.addstr("Trackindex: " + str(trackindex) + "\n")
+
         track.load().name
         session.player.load(track)
         while not (track.is_loaded):
@@ -115,10 +119,11 @@ def do_play(stdscr):
         strdm = strd.split(":", 1)
         #print "Duration: " + str(dur)
         stdscr.addstr("Track length: " + str(strdm[1]) + "\n")
+	stdscr.refresh()
 
-    # Move to end to test next track functions
-    # seekto = dur - 5000
-    #self.session.player.seek(seekto)
+	# Move to end to test next track functions
+	#seekto = dur - 5000
+	#session.player.seek(seekto)
 
  
 
@@ -234,8 +239,8 @@ def on_end_of_track(session):
         # global trackindex
         # global tracks
         # global nooftracks
-
-        print "End of track"
+	stdscr.clear()
+        stdscr.addstr("End of track")
         do_next()
 
 def on_logged_in(session):
@@ -278,12 +283,10 @@ def on_logged_in(session):
             spotify.SessionEvent.LOGGED_IN, self.on_logged_in)
 	
 """
-
-
 # TODO Add 'nouri=1' and 'notrack=1' to settings_editthis
 
  
-def do_listoffline(self, list):
+def do_listoffline(stdscr, list):
 	print "You have " + str(len(container)) + " playlists."
 	c=0
 	for s in container:
@@ -296,7 +299,7 @@ def do_listoffline(self, list):
 		print offline
 		c+=1
 	    
-def do_set_offline(self, list):
+def do_set_offline(stdscr, list):
         "Set playlist offline"
         global playlist
         print "Pl to set offline: " + str(playlist)
@@ -308,7 +311,7 @@ def do_set_offline(self, list):
             print "Removed from harddisk"
             playlist.set_offline_mode(offline=False)
 
-def do_offstatus(self, list):
+def do_offstatus(stdscr, list):
         "Offline status"
         print "Downloaded: " + str(playlist.offline_download_completed) + "%"
 
@@ -367,7 +370,7 @@ def do_nextpl(stdscr):
         #print "In nextpl: uri=" + uri
         #uri = playlist
         # ... and play it
-        do_play()
+        do_play(stdscr)
 
 
 def do_prevpl(stdscr):
@@ -414,7 +417,7 @@ def do_prevpl(stdscr):
         #print "In prevpl: uri=" + uri
         #uri = playlist
         # ... and play it
-        do_play()
+        do_play(stdscr)
 
   
 
@@ -443,7 +446,6 @@ def on_connection_state_changed(session):
 			'I am not logged in, but I may be %s',
 			self.session.remembered_user)
 """
-
 def on_container_loaded(session):
         global cloaded
         #print "Container loaded"
@@ -454,8 +456,8 @@ def on_end_of_track(session):
         # global tracks
         # global nooftracks
 
-        print "End of track"
-        do_next(self)
+        #print "End of track"
+        do_next(stdscr)
 
 def on_logged_in(session, dummy):
         pass
@@ -468,6 +470,8 @@ def do_next(stdscr):
         global ttpsreal
         global nooftracks
         global uri
+	stdscr.addstr("Next track")
+
         #print "uri=" + str(uri)
 
         # Check if at end of playlist
@@ -476,14 +480,14 @@ def do_next(stdscr):
 		#print "Next track"
 		trackindex += 1
 		#print "Trackindex: " + str(trackindex)
-		playnext()
+		playnext(stdscr)
         else:
 		stdscr.addstr("End of playlist")
 		#print "End of playlist"
 		# Stop playback
 		session.player.play(False)
 		trackindex = 0
-		playnext()
+		playnext(stdscr)
 
 def do_prev(stdscr):
         "Previous track"
@@ -494,17 +498,17 @@ def do_prev(stdscr):
 
         # Check if at end of playlist
         if trackindex > 0:
-            print "Next track"
+            #print "Next track"
             trackindex -= 1
-            print "Trackindex: " + str(trackindex)
-            playnext()
+            #print "Trackindex: " + str(trackindex)
+            playnext(stdscr)
 
         else:
-            print "Beginning of playlist"
+            #print "Beginning of playlist"
             # Stop playback
             session.player.play(False)
             trackindex = 0
-            playnext()
+            playnext(stdscr)
 
 def do_exit(stdscr):
         "Stop music and exit"
@@ -535,7 +539,7 @@ def internet_on():
     except urllib2.URLError as err: pass
     return False
 
-def cleanexit():
+def cleanexit(stdscr):
     curses.nocbreak()
     stdscr.keypad(0)
     curses.echo()
@@ -621,8 +625,7 @@ if __name__ == '__main__':
         nouri=0
         global notrack
         notrack=0
-        global savedtrack
-	savedtrack=0
+	savedtrack=""
         do_read_settings("dummy")
 	
 	# See if there are stored values
@@ -655,7 +658,6 @@ if __name__ == '__main__':
             print "Login failed, check your settings"
             sys.exit()
         # Last played playlist
-        global uri
         print "Last playlist:" + uri
         print "Last track: " + savedtrack
 	
@@ -773,10 +775,9 @@ if __name__ == '__main__':
         #print "Real track index = " + str(c)
         global trackindex
         trackindex = c
+ 
+        print "Trackindex: " + str(trackindex)
 
-        #print "Trackindex: " + str(trackindex)
-
-        global ttpsreal
         ttpsreal = savedtrack
 
         print "All ok - lets play!"
@@ -790,6 +791,8 @@ if __name__ == '__main__':
 
 	stdscr.addstr("q-quit\nn-next track\np-prev track\nq-prevpl\nw-nextpl\n")
 	stdscr.addstr("Track:"+ str(ttpsreal) + "\n")
+	stdscr.addstr("Trackindex: " + str(trackindex))
+
 
 	# Start playback
 	stdscr.addstr("Start play\n")
@@ -818,13 +821,14 @@ if __name__ == '__main__':
 		if curses.keyname(c)=="q" :
 			quit=True
 		if curses.keyname(c)=="n" :
-			playnext(stdscr)
+			do_next(stdscr)
 		if curses.keyname(c)=="p" :
 			do_prev(stdscr)
 		if curses.keyname(c)=="q" :
 			do_prevpl(stdscr)	
 		if curses.keyname(c)=="w" :
 			do_nextpl(stdscr)
+			
 		time.sleep(0.1)
 	cleanexit(stdscr)	
     except KeyboardInterrupt:
