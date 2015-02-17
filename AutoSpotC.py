@@ -88,6 +88,7 @@ def do_play(stdscr):
         stdscr.clear()
         stdscr.addstr("In do_play\n")
         global ttpsreal
+        global pl
         #print "ttpsreal: " + str(ttpsreal)
         track = session.get_track(ttpsreal)
 
@@ -105,7 +106,10 @@ def do_play(stdscr):
         # Clear and print
         stdscr.addstr("Now playing: " + artist.load().name + " - " + curtrack +"\n")
         stdscr.addstr("Trackindex: " + str(trackindex) + "\n")
-        stdscr.addstr("Playlist: " + str(curplaylist) + "\n")
+        
+        pl = str(container[playlistindex]).split("'")
+                
+        stdscr.addstr("Playlist: " + str(pl[1]) + "\n")
         stdscr.addstr("Playlistindex: " + str(playlistindex) + "\n")
         
 
@@ -115,10 +119,10 @@ def do_play(stdscr):
             pass
         stdscr.addstr ("Track loaded\n")
 
-        stdscr.addstr ("Press a key")
+        #stdscr.addstr ("Press a key")
         # Debug, wait for keypress
-        while stdscr.getch() == "":
-            pass
+        #while stdscr.getch() == "":
+        #    pass
 
         session.player.play()
 
@@ -442,10 +446,10 @@ def do_prevpl(stdscr):
         #print "In prevpl: uri=" + uri
         #uri = playlist
         # ... and play it
-        stdscr.addstr ("Press a key before play starts")
+        #stdscr.addstr ("Press a key before play starts")
         # Debug, wait for keypress
-        while stdscr.getch() == "":
-            pass
+        #while stdscr.getch() == "":
+        #    pass
 
         do_play(stdscr)
 
@@ -561,11 +565,11 @@ def playnext(stdscr):
 def do_pause(stdscr):
     global pausstate
     if pausstate==False:
-        stdscr.addstr("Pause")
+        stdscr.addstr("Play")
         #session.player.pause()
         pausstate = True
     else:
-        stdscr.addstr("Play")
+        stdscr.addstr("Pause")
         pausstate = False
     session.player.play(pausstate)
         
@@ -873,6 +877,6 @@ if __name__ == '__main__':
                 do_pause(stdscr)
                       
             time.sleep(0.1)
-            cleanexit(stdscr) 
+        cleanexit(stdscr) 
     except KeyboardInterrupt:
         cleanexit(stdscr)
