@@ -85,6 +85,8 @@ def initApp(self):
   #        break
 
 def do_play(stdscr):
+        stdscr.clear()
+        stdscr.addstr("In do_play\n")
         global ttpsreal
         #print "ttpsreal: " + str(ttpsreal)
         track = session.get_track(ttpsreal)
@@ -101,16 +103,22 @@ def do_play(stdscr):
         curplaylist = unicodedata.normalize('NFKD', playlist.name).encode('ascii', 'ignore')
         
         # Clear and print
-        stdscr.clear()
         stdscr.addstr("Now playing: " + artist.load().name + " - " + curtrack +"\n")
         stdscr.addstr("Trackindex: " + str(trackindex) + "\n")
         stdscr.addstr("Playlist: " + str(curplaylist) + "\n")
+        stdscr.addstr("Playlistindex: " + str(playlistindex) + "\n")
+        
 
         track.load().name
         session.player.load(track)
         while not (track.is_loaded):
             pass
-        #print "Track loaded"
+        stdscr.addstr ("Track loaded\n")
+
+        stdscr.addstr ("Press a key")
+        # Debug, wait for keypress
+        while stdscr.getch() == "":
+            pass
 
         session.player.play()
 
@@ -380,22 +388,25 @@ def do_nextpl(stdscr):
 
 
 def do_prevpl(stdscr):
-        "Previous playlist"
+        stdscr.clear()
+        stdscr.addstr("In do_prevpl\n")
+        #"Previous playlist"
         global playlistindex
         global playlist
-        stdscr.clear()
         stdscr.addstr ("Current playlistindex: " + str(playlistindex)+"\n")
         stdscr.refresh()
 
         playlistindex -= 1
 
+        stdscr.addstr ("New playlistindex: " + str(playlistindex)+"\n")
+
+
         pl = str(container[playlistindex]).split("'")
-        #print "Prev pl is: " + pl[1]
+        stdscr.addstr ("Current pl is: " + pl[1] + "\n")
 
         playlist = session.get_playlist(pl[1])
         curplaylist = unicodedata.normalize('NFKD', playlist.name).encode('ascii', 'ignore')
 
-        
         # Available offline?
         offline = playlist.offline_status
         ofstat = ""
@@ -411,11 +422,13 @@ def do_prevpl(stdscr):
             pass
         stdscr.addstr("Playlist loaded" +"\n")
 
+
         # Get first track of new playl
         #print str(playlist.tracks[0])
         firsttrack = str(playlist.tracks[0])
         firsttrackar = firsttrack.split("'")
         stdscr.addstr("First track of new list: " + firsttrackar[1]+"\n")
+        stdscr.addstr("Playlist name: " + curplaylist + ofstat +"\n")
 
         global ttpsreal
         ttpsreal = firsttrackar[1]
@@ -426,13 +439,14 @@ def do_prevpl(stdscr):
         ruri = realuri.split("'")
         uri = ruri[1]
 
+        #print "In prevpl: uri=" + uri
+        #uri = playlist
+        # ... and play it
+        stdscr.addstr ("Press a key before play starts")
         # Debug, wait for keypress
         while stdscr.getch() == "":
             pass
 
-        #print "In prevpl: uri=" + uri
-        #uri = playlist
-        # ... and play it
         do_play(stdscr)
 
   
@@ -714,10 +728,10 @@ if __name__ == '__main__':
         c = 0
         try:
             while uri != str(pl[1]):
-                print str(c) + "-" + uri + "-" + str(pl[1])
+                #print str(c) + "-" + uri + "-" + str(pl[1])
                 pl = str(container[c]).split("'")
                 c += 1
-                print str(c)
+                #print str(c)
         except:
             print "Error - last playlist not found"
         #sys.exit()
@@ -782,11 +796,11 @@ if __name__ == '__main__':
         cmptrack = track[1]
         print "cmptrack: " + cmptrack
 
-        print "Notrack"
+        #print "Notrack"
         print notrack
         if notrack:
             print "Notrack"
-        savedtrack = cmptrack
+            savedtrack = cmptrack
 
         print "savedtrack: " + savedtrack
 
@@ -795,12 +809,12 @@ if __name__ == '__main__':
             while savedtrack != cmptrack:
                 track = str(cplaylist[c]).split("'")
                 cmptrack = track[1]
-                #print str(c) + "-" + cmptrack
+                print str(c) + "-" + cmptrack
                 c += 1
         except:
             pass
         # Adjust value
-        c -= 1
+        #c -= 1
         #print "Real track index = " + str(c)
         global trackindex
         trackindex = c
@@ -847,13 +861,13 @@ if __name__ == '__main__':
             print curses.keyname(c),
             if curses.keyname(c)=="q" :
                 quit=True
-            if curses.keyname(c)=="n" :
+            if curses.keyname(c)=="+" :
                 do_next(stdscr)
-            if curses.keyname(c)=="p" :
+            if curses.keyname(c)=="-" :
                 do_prev(stdscr)
-            if curses.keyname(c)=="q" :
+            if curses.keyname(c)=="p" :
                 do_prevpl(stdscr) 
-            if curses.keyname(c)=="w" :
+            if curses.keyname(c)=="n" :
                 do_nextpl(stdscr)
             if curses.keyname(c)=="s" :
                 do_pause(stdscr)
