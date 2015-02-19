@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: iso-8859-1 -*-
 
 # Upload changes to Github:
 # git commit -a
@@ -104,20 +105,21 @@ def do_play(stdscr):
         curplaylist = unicodedata.normalize('NFKD', playlist.name).encode('ascii', 'ignore')
         
         # Clear and print
+        # TODO Freaks out if צהו in the title
         stdscr.addstr("Now playing: " + artist.load().name + " - " + curtrack +"\n")
-        stdscr.addstr("Trackindex: " + str(trackindex) + "\n")
+        stdscr.addstr("Track #: " + str(trackindex) + "\n")
         
         pl = str(container[playlistindex]).split("'")
                 
-        stdscr.addstr("Playlist: " + str(pl[1]) + "\n")
-        stdscr.addstr("Playlistindex: " + str(playlistindex) + "\n")
+        #stdscr.addstr("Playlist: " + str(pl[1]) + "\n" + curplaylist + "\n")
+        #stdscr.addstr("Playlistindex: " + str(playlistindex) + "\n")
         
 
         track.load().name
         session.player.load(track)
         while not (track.is_loaded):
             pass
-        stdscr.addstr ("Track loaded\n")
+        #stdscr.addstr ("Track loaded\n")
 
         #stdscr.addstr ("Press a key")
         # Debug, wait for keypress
@@ -138,6 +140,11 @@ def do_play(stdscr):
         #print "Duration: " + str(dur)
         #stdscr.clear()
         stdscr.addstr("Track length: " + str(strdm[1]) + "\n")
+
+        playlist = session.get_playlist(pl[1])
+        curplaylist = unicodedata.normalize('NFKD', playlist.name).encode('ascii', 'ignore')
+        stdscr.addstr("Playlist: " + curplaylist)
+        
         stdscr.refresh()
 
         # Move to end to test next track functions
@@ -350,7 +357,13 @@ def do_nextpl(stdscr):
         global container
         global playlist
         # print "Current playlistindex: " + str(playlistindex)
+
+        stdscr.addstr ("You have " + str(len(container)) + " playlists.")
+        
         playlistindex += 1
+
+        if (playlistindex+1>len(container)):
+            playlistindex=0
 
         pl = str(container[playlistindex]).split("'")
         #print "Next pl is: (" + str(playlistindex) + ") - " + pl[1]
