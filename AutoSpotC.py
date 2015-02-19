@@ -105,8 +105,9 @@ def do_play(stdscr):
         curplaylist = unicodedata.normalize('NFKD', playlist.name).encode('ascii', 'ignore')
         
         # Clear and print
-        # TODO Freaks out if צהו in the title
-        stdscr.addstr("Now playing: " + artist.load().name + " - " + curtrack +"\n")
+        nowplaying = unicodedata.normalize('NFKD', artist.load().name).encode('ascii', 'ignore')
+
+        stdscr.addstr("Now playing: " + nowplaying + " - " + curtrack + "\n")
         stdscr.addstr("Track #: " + str(trackindex) + "\n")
         
         pl = str(container[playlistindex]).split("'")
@@ -143,13 +144,17 @@ def do_play(stdscr):
 
         playlist = session.get_playlist(pl[1])
         curplaylist = unicodedata.normalize('NFKD', playlist.name).encode('ascii', 'ignore')
-        stdscr.addstr("Playlist: " + curplaylist)
+        # Available offline?
+        offline = playlist.offline_status
+
+        stdscr.addstr("Playlist: " + curplaylist + " " + str(offline))
+        
         
         stdscr.refresh()
 
-        # Move to end to test next track functions
-        #seekto = dur - 5000
-        #session.player.seek(seekto)
+        # Move to end to test next track function
+        # seekto = dur - 5000
+        # session.player.seek(seekto)
 
  
 
@@ -321,35 +326,35 @@ def do_listoffline(stdscr, list):
     #print "Next pl is: (" + str(c) + ") - " + pl[1]
     pl.load().name
     offline = pl.offline_status
-    print offline
+    stdscr.addstr (offline)
     c+=1
       
-def do_set_offline(stdscr, list):
+def do_set_offline(stdscr):
         "Set playlist offline"
         global playlist
-        print "Pl to set offline: " + str(playlist)
-        print "Offline: " + str(playlist.offline_status)
+        stdscr.addstr ("Pl to set offline: " + str(playlist))
+        stdscr.addstr ("Offline: " + str(playlist.offline_status))
         if playlist.offline_status == 0:
-            print "Ok, downloading"
+            stdscr.addstr ("Ok, downloading")
             playlist.set_offline_mode(offline=True)
         else:
-            print "Removed from harddisk"
+            stdscr.addstr ("Removed from harddisk")
             playlist.set_offline_mode(offline=False)
 
 def do_offstatus(stdscr, list):
         "Offline status"
-        print "Downloaded: " + str(playlist.offline_download_completed) + "%"
+        stdscr.addstr ("Downloaded: " + str(playlist.offline_download_completed) + "%")
 
         offline = playlist.offline_status
-        print offline
+        #sprint offline
         if offline == 0:
-            print "Not available offline"
+            stdscr.addstr ("Not available offline")
         if offline == 1:
-            print "Available offline"
+            stdscr.addstr ("Available offline")
         if offline == 2:
-            print "Download in progress"
+            stdscr.addstr ("Download in progress")
         if offline == 3:
-            print "Waiting for download"
+            stdscr.addstr ("Waiting for download")
 
 def do_nextpl(stdscr):
         "Next playlist"
@@ -841,7 +846,6 @@ if __name__ == '__main__':
         ttpsreal = savedtrack
 
         print "All ok - lets play!"
-
         
         # Use curses to be able ro detect key press
         #init the curses screen
@@ -849,7 +853,7 @@ if __name__ == '__main__':
         #use cbreak to not require a return key press
         curses.cbreak()
 
-        stdscr.addstr("q-quit\nn-next track\np-prev track\nq-prevpl\nw-nextpl\n")
+        stdscr.addstr("q-quit\nn-next track\np-prev track\nq-prevpl\nw-nextpl\no-offline\n")
         stdscr.addstr("Track:"+ str(ttpsreal) + "\n")
         stdscr.addstr("Trackindex: " + str(trackindex))
 
@@ -888,6 +892,8 @@ if __name__ == '__main__':
                 do_nextpl(stdscr)
             if curses.keyname(c)=="s" :
                 do_pause(stdscr)
+            if curses.keyname(c)=="o" :
+                do_set_offline(stdscr)
                       
             time.sleep(0.1)
         cleanexit(stdscr) 
