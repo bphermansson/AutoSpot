@@ -26,6 +26,11 @@ import urllib2
 # Physical buttons
 # Ref: https://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/robot/buttons_and_switches/
 #import RPi.GPIO as GPIO
+
+# Try RPIO instead, may work with curses
+# http://pythonhosted.org/RPIO/
+import RPIO
+
 import time
 prev_input = 0
 
@@ -617,6 +622,11 @@ def internet_on():
     except urllib2.URLError as err: pass
     return False
 
+def gpio_callback(gpio_id, val):
+    print("gpio %s: %s" % (gpio_id, val))
+    stdscr.addstr("Gpio: " + gpio_id +"-"+ val)
+
+
 def cleanexit(stdscr):
     curses.nocbreak()
     stdscr.keypad(0)
@@ -652,13 +662,17 @@ if __name__ == '__main__':
     # wakeCall.start()
 
     # Setup physical button inputs
+    """
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(17,GPIO.IN)
     GPIO.setup(22,GPIO.IN)
     GPIO.setup(24,GPIO.IN)
     GPIO.setup(25,GPIO.IN)
     GPIO.setup(27,GPIO.IN)
+    """
 
+    RPIO.add_interrupt_callback(17, gpio_callback)
+    
     print "Hello"
 
     try:
@@ -902,6 +916,8 @@ if __name__ == '__main__':
                 #print("Button left Pressed\n")
                 do_pause(stdscr)
             """
+            # Check physical buttons
+            RPIO.wait_for_interrupts(threaded=True)
             
             # Check key presses
             c = stdscr.getch()

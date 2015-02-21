@@ -10,6 +10,8 @@ work with Curses (which is used to enable keyboard control).
 Dependencies:
 sudo apt-get install libffi-dev python-dev python-alsaaudio
 
+sudo easy_install -U RPIO
+
 For 32-bit:
 wget https://developer.spotify.com/download/libspotify/libspotify-12.1.51-Linux-i686-release.tar.gz
 Or for 64-bit:
