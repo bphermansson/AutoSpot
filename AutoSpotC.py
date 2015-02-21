@@ -20,12 +20,11 @@ import spotify
 import curses
 # To load config file
 import ConfigParser
-# import RPi.GPIO as GPIO
 import urllib2
 
 # Physical buttons
 # Ref: https://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/robot/buttons_and_switches/
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 import time
 prev_input = 0
 
@@ -146,10 +145,20 @@ def do_play(stdscr):
         curplaylist = unicodedata.normalize('NFKD', playlist.name).encode('ascii', 'ignore')
         # Available offline?
         offline = playlist.offline_status
+        stdscr.addstr("Playlist: " + curplaylist + " " + str(offline) + "\n")
+        
+        if offline == 0:
+            stdscr.addstr ("Not available offline\n")
+        if offline == 1:
+            stdscr.addstr ("Available offline\n")
+        if offline == 2:
+            stdscr.addstr ("Download in progress\n")
+        if offline == 3:
+            stdscr.addstr ("Waiting for download\n")
 
-        stdscr.addstr("Playlist: " + curplaylist + " " + str(offline))
-        
-        
+        # Are we off- or online?
+        stdscr.addstr ("Online = " + str(internet_on()))
+            
         stdscr.refresh()
 
         # Move to end to test next track function
@@ -377,10 +386,15 @@ def do_nextpl(stdscr):
         curplaylist = unicodedata.normalize('NFKD', playlist.name).encode('ascii', 'ignore')
 
         # Available offline?
-        offline = playlist.offline_status
+        ploffline = playlist.offline_status
+        rpionline = internet_on()
         ofstat = ""
-        if offline == 1:
+        if ploffline == 1:
             ofstat = "*"
+        if (ploffline<>1 and rpionline==False):
+            # Playlist not available offline, and we are offline...
+            stdscr.addstr("Playlist not available\n")
+
 
         #print "Playlist name: " + curplaylist + ofstat
 
@@ -705,7 +719,11 @@ if __name__ == '__main__':
             # There is a remembered user
             print "I remember you!"
             session.relogin()
-            logged_in.wait()
+            #logged_in.wait()
+            while session.connection.state is spotify.ConnectionState.LOGGED_OUT:
+                pass
+            print "Logged in!"
+            print "Connection state: " + str(session.connection.state)
         else:
             print "Not logged in"
             # Login
@@ -864,19 +882,26 @@ if __name__ == '__main__':
         quit=False
 
         while quit !=True:
+            """
             # Check physical buttons
-            """
+            
             if (GPIO.input(17)==0):
-              print("Button Up Pressed\n")
+                #print("Button Up Pressed\n")
+                do_next(stdscr)
             if (GPIO.input(27)==0):
-              print("Button Pressed\n")
+                stdscr.addstr("Button Pressed\n")
+                do_prev(stdscr)
             if (GPIO.input(22)==0):
-              print("Button right Pressed\n")
+                #print("Button right Pressed\n")
+                do_prevpl(stdscr) 
             if (GPIO.input(24)==0):
-              print("Button down Pressed\n")
+                #print("Button down Pressed\n")
+                do_nextpl(stdscr)
             if (GPIO.input(25)==0):
-              print("Button left Pressed\n")
+                #print("Button left Pressed\n")
+                do_pause(stdscr)
             """
+            
             # Check key presses
             c = stdscr.getch()
             print curses.keyname(c),

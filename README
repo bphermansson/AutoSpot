@@ -1,7 +1,11 @@
 AutoSpot
 =====
 
-A command-line Spotify-client based on Pyspotify2. 
+A command-line Spotify-client based on Pyspotify2.
+We have two branches, one where the player is controlled by the computers 
+keyboard and one where the player is controlled by physical buttons.
+For some reason Raspberry:s Rpi.gpio (for working with the Gpio) doesn't
+work with Curses (which is used to enable keyboard control). 
 
 Dependencies:
 sudo apt-get install libffi-dev python-dev python-alsaaudio
