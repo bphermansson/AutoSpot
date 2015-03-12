@@ -623,8 +623,10 @@ def internet_on():
     return False
 
 def gpio_callback(gpio_id, val):
-    print("gpio %s: %s" % (gpio_id, val))
-    stdscr.addstr("Gpio: " + gpio_id +"-"+ val)
+    #print("gpio %s: %s" % (gpio_id, val))
+    #stdscr.addstr("gpio %s: %s" % (gpio_id, val))
+    stdscr.addstr("Button")
+    
 
 
 def cleanexit(stdscr):
@@ -665,14 +667,19 @@ if __name__ == '__main__':
     """
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(17,GPIO.IN)
-    GPIO.setup(22,GPIO.IN)
-    GPIO.setup(24,GPIO.IN)
-    GPIO.setup(25,GPIO.IN)
     GPIO.setup(27,GPIO.IN)
+    GPIO.setup(22,GPIO.IN)
+    GPIO.setup(9,GPIO.IN)
+    GPIO.setup(10,GPIO.IN)
     """
 
-    RPIO.add_interrupt_callback(17, gpio_callback)
-    
+    # Add interrupts for hardware buttons
+    RPIO.add_interrupt_callback(17, gpio_callback, debounce_timeout_ms=100)
+    RPIO.add_interrupt_callback(27, gpio_callback, debounce_timeout_ms=100)
+    RPIO.add_interrupt_callback(22, gpio_callback, debounce_timeout_ms=100)
+    RPIO.add_interrupt_callback(9, gpio_callback, debounce_timeout_ms=100)
+    RPIO.add_interrupt_callback(10, gpio_callback, debounce_timeout_ms=100)
+      
     print "Hello"
 
     try:
@@ -897,9 +904,9 @@ if __name__ == '__main__':
         quit=False
 
         while quit !=True:
-            """
-            # Check physical buttons
             
+            # Check physical buttons
+            """            
             if (GPIO.input(17)==0):
                 #print("Button Up Pressed\n")
                 do_next(stdscr)
@@ -909,15 +916,16 @@ if __name__ == '__main__':
             if (GPIO.input(22)==0):
                 #print("Button right Pressed\n")
                 do_prevpl(stdscr) 
-            if (GPIO.input(24)==0):
+            if (GPIO.input(9)==0):
                 #print("Button down Pressed\n")
                 do_nextpl(stdscr)
-            if (GPIO.input(25)==0):
+            if (GPIO.input(10)==0):
                 #print("Button left Pressed\n")
                 do_pause(stdscr)
-            """
-            # Check physical buttons
-            RPIO.wait_for_interrupts(threaded=True)
+	     """            
+	    # Check physical buttons
+	    RPIO.wait_for_interrupts(threaded=True)
+
             
             # Check key presses
             c = stdscr.getch()
