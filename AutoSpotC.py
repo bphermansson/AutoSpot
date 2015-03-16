@@ -5,7 +5,6 @@
 # git commit -a
 # git push origin master
 # git push origin btnctrl
-
 # Update from Github
 #  git pull
 
