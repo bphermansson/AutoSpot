@@ -4,6 +4,7 @@
 # Upload changes to Github:
 # git commit -a
 # git push origin master
+# git push origin btnctrl
 
 # Update from Github
 #  git pull
@@ -25,6 +26,11 @@ import urllib2
 # Physical buttons
 # Ref: https://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/robot/buttons_and_switches/
 #import RPi.GPIO as GPIO
+
+# Try RPIO instead, may work with curses
+# http://pythonhosted.org/RPIO/
+import RPIO
+
 import time
 prev_input = 0
 
@@ -616,6 +622,13 @@ def internet_on():
     except urllib2.URLError as err: pass
     return False
 
+def gpio_callback(gpio_id, val):
+    #print("gpio %s: %s" % (gpio_id, val))
+    #stdscr.addstr("gpio %s: %s" % (gpio_id, val))
+    stdscr.addstr("Button")
+    
+
+
 def cleanexit(stdscr):
     curses.nocbreak()
     stdscr.keypad(0)
@@ -651,13 +664,22 @@ if __name__ == '__main__':
     # wakeCall.start()
 
     # Setup physical button inputs
+    """
     GPIO.setmode(GPIO.BCM)
     GPIO.setup(17,GPIO.IN)
-    GPIO.setup(22,GPIO.IN)
-    GPIO.setup(24,GPIO.IN)
-    GPIO.setup(25,GPIO.IN)
     GPIO.setup(27,GPIO.IN)
+    GPIO.setup(22,GPIO.IN)
+    GPIO.setup(9,GPIO.IN)
+    GPIO.setup(10,GPIO.IN)
+    """
 
+    # Add interrupts for hardware buttons
+    RPIO.add_interrupt_callback(17, gpio_callback, debounce_timeout_ms=100)
+    RPIO.add_interrupt_callback(27, gpio_callback, debounce_timeout_ms=100)
+    RPIO.add_interrupt_callback(22, gpio_callback, debounce_timeout_ms=100)
+    RPIO.add_interrupt_callback(9, gpio_callback, debounce_timeout_ms=100)
+    RPIO.add_interrupt_callback(10, gpio_callback, debounce_timeout_ms=100)
+      
     print "Hello"
 
     try:
@@ -882,9 +904,9 @@ if __name__ == '__main__':
         quit=False
 
         while quit !=True:
-            """
-            # Check physical buttons
             
+            # Check physical buttons
+            """            
             if (GPIO.input(17)==0):
                 #print("Button Up Pressed\n")
                 do_next(stdscr)
@@ -894,13 +916,16 @@ if __name__ == '__main__':
             if (GPIO.input(22)==0):
                 #print("Button right Pressed\n")
                 do_prevpl(stdscr) 
-            if (GPIO.input(24)==0):
+            if (GPIO.input(9)==0):
                 #print("Button down Pressed\n")
                 do_nextpl(stdscr)
-            if (GPIO.input(25)==0):
+            if (GPIO.input(10)==0):
                 #print("Button left Pressed\n")
                 do_pause(stdscr)
-            """
+	     """            
+	    # Check physical buttons
+	    RPIO.wait_for_interrupts(threaded=True)
+
             
             # Check key presses
             c = stdscr.getch()
