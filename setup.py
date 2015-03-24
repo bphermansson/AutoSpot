@@ -14,4 +14,5 @@ setup(name='autospot',
     author_email='patrik@paheco.nu',
     url='https://github.com/bphermansson/AutoSpot/',
     install_requires=['pyspotify >= 2.0.0b4']
+    Programming Language :: Python :: 2 :: Only
 )

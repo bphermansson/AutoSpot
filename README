@@ -14,10 +14,10 @@ work with Curses (which is used to enable keyboard control).
 Dependencies:
 sudo apt-get install libffi-dev python-dev python-alsaaudio
 
-sudo easy_install -U RPIO
+sudo easy_install3 -U RPIO
+sudo pip-3.2 install pyalsaaudio
 
-
-
+Install libspotify:
 For 32-bit:
 wget https://developer.spotify.com/download/libspotify/libspotify-12.1.51-Linux-i686-release.tar.gz
 Or for 64-bit:
@@ -29,6 +29,9 @@ sudo make install prefix=/usr/local
 
 -Get a Binary Spotify App key from https://devaccount.spotify.com/my-account/keys/
 and store it in the current directory.
+
+Install pyspotify
+sudo pip-3.2 install pyspotify
 
 Install Autospot:
 sudo python setup.py install
