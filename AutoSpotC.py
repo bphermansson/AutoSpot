@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: iso-8859-1 -*-
 
 # Upload changes to Github:
@@ -27,8 +27,12 @@ import configparser
 import urllib.request, urllib.error, urllib.parse
 
 # LCD
+#import os
+#os.system("export QUICK2WIRE_API_HOME=/home/pi/AutoSpot/quick2wire-python-api")
+#os.system("export PYTHONPATH=$PYTHONPATH:$QUICK2WIRE_API_HOME")
 #from i2clibraries import i2c_lcd
-
+import quick2wire.i2c as i2c
+from i2clibraries import i2c_lcd
 
 # Physical buttons
 # Ref: https://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/robot/buttons_and_switches/
@@ -36,7 +40,7 @@ import urllib.request, urllib.error, urllib.parse
 
 # Try RPIO instead, may work with curses
 # http://pythonhosted.org/RPIO/
-import RPIO
+#import RPIO
 
 import time
 prev_input = 0
@@ -702,11 +706,24 @@ if __name__ == '__main__':
 	"""
 
 	# Add interrupts for hardware buttons
-	RPIO.add_interrupt_callback(17, gpio_callback, debounce_timeout_ms=100)
-	RPIO.add_interrupt_callback(27, gpio_callback, debounce_timeout_ms=100)
-	RPIO.add_interrupt_callback(22, gpio_callback, debounce_timeout_ms=100)
-	RPIO.add_interrupt_callback(9, gpio_callback, debounce_timeout_ms=100)
-	RPIO.add_interrupt_callback(10, gpio_callback, debounce_timeout_ms=100)
+	# Doesnt work for now
+	#RPIO.add_interrupt_callback(17, gpio_callback, debounce_timeout_ms=100)
+	#RPIO.add_interrupt_callback(27, gpio_callback, debounce_timeout_ms=100)
+	#RPIO.add_interrupt_callback(22, gpio_callback, debounce_timeout_ms=100)
+	#RPIO.add_interrupt_callback(9, gpio_callback, debounce_timeout_ms=100)
+	#RPIO.add_interrupt_callback(10, gpio_callback, debounce_timeout_ms=100)
+	
+	# LCD
+	# Configuration parameters
+	# I2C Address, Port, Enable pin, RW pin, RS pin, Data 4 pin, Data 5 pin, Data 6 pin, Data 7 pin, Backlight pin (optional)
+	lcd = i2c_lcd.i2c_lcd(0x20,1, 2, 1, 0, 4, 5, 6, 7, 3)
+	
+	# Disable cursor
+	lcd.command(lcd.CMD_Display_Control | lcd.OPT_Enable_Display)
+	lcd.backLightOn()
+
+	lcd.setPosition(1, 0)
+	lcd.writeString("Autospot v0.1")
 
 	print ("Hello")
 
@@ -922,7 +939,7 @@ if __name__ == '__main__':
 		#stdscr.addstr("Trackindex: " + str(trackindex))
 
 		# Check physical buttons
-		RPIO.wait_for_interrupts(threaded=True)
+		#RPIO.wait_for_interrupts(threaded=True)
 
 		# Start playback
 		#stdscr.addstr("Start play\n")
