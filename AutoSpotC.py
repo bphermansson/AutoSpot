@@ -129,6 +129,12 @@ def do_play():
         nply = nowplaying.decode("utf-8")
         print ("Now playing: " + nply + " - " + ctrk + "\n")
         print ("Track #: " + str(trackindex) + "\n")   
+        lcd.clear()
+        lcd.setPosition(1, 0)
+        lcd.writeString(nply)
+        lcd.setPosition(2, 0)
+        lcd.writeString(ctrk)
+
         pl = str(container[playlistindex]).split("'")
 
         #stdscr.addstr("Playlist: " + str(pl[1]) + "\n" + curplaylist + "\n")
