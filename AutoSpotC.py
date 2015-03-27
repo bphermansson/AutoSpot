@@ -27,12 +27,17 @@ import configparser
 import urllib.request, urllib.error, urllib.parse
 
 # LCD
+import pylcdlib
+lcd = pylcdlib.lcd(0x20,1,1)
+lcd.lcd_puts("Welcome",1) 
+
+
 #import os
 #os.system("export QUICK2WIRE_API_HOME=/home/pi/AutoSpot/quick2wire-python-api")
 #os.system("export PYTHONPATH=$PYTHONPATH:$QUICK2WIRE_API_HOME")
 #from i2clibraries import i2c_lcd
-import quick2wire.i2c as i2c
-from i2clibraries import i2c_lcd
+#import quick2wire.i2c as i2c
+#from i2clibraries import i2c_lcd
 
 # Physical buttons
 # Ref: https://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/robot/buttons_and_switches/
@@ -40,7 +45,13 @@ from i2clibraries import i2c_lcd
 
 # Try RPIO instead, may work with curses
 # http://pythonhosted.org/RPIO/
-#import RPIO
+import RPIO
+#from quick2wire.gpio import pins, In, Out, Both
+
+#import wiringpi2
+#wiringpi2.wiringPiSetupGpio # For GPIO pin numbering
+#wiringpi2.pinMode(11,0) # Set pin 6 to 1 ( OUTPUT )
+
 
 import time
 prev_input = 0
@@ -66,9 +77,11 @@ pausstate=True
 
 # Null output for hiding output
 class NullDevice(object):
+	
     def write(self, s):
         pass
 
+@profile
 def initApp(self):
     print("In initApp")
   # Logged in?
@@ -100,13 +113,12 @@ def initApp(self):
   #    if cloaded == 1:
   #        print "Playlists loaded, cloaded=1"
   #        break
-
 def do_play():
         #stdscr.clear()
         #stdscr.addstr("In do_play\n")
         global ttpsreal
         global pl
-        #print "ttpsreal: " + str(ttpsreal)
+        print ("ttpsreal: " + str(ttpsreal))
         track = session.get_track(ttpsreal)
 
         #curartist = unicodedata.normalize('NFKD', track.artists).encode('ascii','ignore')
@@ -129,11 +141,18 @@ def do_play():
         nply = nowplaying.decode("utf-8")
         print ("Now playing: " + nply + " - " + ctrk + "\n")
         print ("Track #: " + str(trackindex) + "\n")   
-        lcd.clear()
-        lcd.setPosition(1, 0)
-        lcd.writeString(nply)
-        lcd.setPosition(2, 0)
-        lcd.writeString(ctrk)
+        # Clear lcd and print new track info
+        lcd.lcd_puts("",1) 
+        lcd.lcd_puts("",2) 
+        lcd.lcd_puts(nply,1) 
+        lcd.lcd_puts(ctrk,2)
+
+
+        #lcd.clear()
+        #lcd.setPosition(1, 0)
+        #lcd.writeString(nply)
+        #lcd.setPosition(2, 0)
+        #lcd.writeString(ctrk)
 
         pl = str(container[playlistindex]).split("'")
 
@@ -556,7 +575,7 @@ def on_end_of_track(session):
         # global tracks
         # global nooftracks
 
-        #print "End of track"
+        print ("End of track")
         do_next()
 
 def on_logged_in(session, dummy):
@@ -619,7 +638,7 @@ def playnext():
   global trackindex
   global ttpsreal
   global playlist
-  #print trackindex
+  print ("Trackindex: " + str(trackindex))
   ttp = str(playlist.tracks[trackindex])
   ttps = ttp.split("'")
   ttpsreal = ttps[1]
@@ -710,27 +729,17 @@ if __name__ == '__main__':
 	GPIO.setup(9,GPIO.IN)
 	GPIO.setup(10,GPIO.IN)
 	"""
+	
+
 
 	# Add interrupts for hardware buttons
 	# Doesnt work for now
-	#RPIO.add_interrupt_callback(17, gpio_callback, debounce_timeout_ms=100)
-	#RPIO.add_interrupt_callback(27, gpio_callback, debounce_timeout_ms=100)
-	#RPIO.add_interrupt_callback(22, gpio_callback, debounce_timeout_ms=100)
-	#RPIO.add_interrupt_callback(9, gpio_callback, debounce_timeout_ms=100)
-	#RPIO.add_interrupt_callback(10, gpio_callback, debounce_timeout_ms=100)
+	RPIO.add_interrupt_callback(17, gpio_callback, debounce_timeout_ms=100)
+	RPIO.add_interrupt_callback(27, gpio_callback, debounce_timeout_ms=100)
+	RPIO.add_interrupt_callback(22, gpio_callback, debounce_timeout_ms=100)
+	RPIO.add_interrupt_callback(9, gpio_callback, debounce_timeout_ms=100)
+	RPIO.add_interrupt_callback(10, gpio_callback, debounce_timeout_ms=100)
 	
-	# LCD
-	# Configuration parameters
-	# I2C Address, Port, Enable pin, RW pin, RS pin, Data 4 pin, Data 5 pin, Data 6 pin, Data 7 pin, Backlight pin (optional)
-	lcd = i2c_lcd.i2c_lcd(0x20,1, 2, 1, 0, 4, 5, 6, 7, 3)
-	
-	# Disable cursor
-	lcd.command(lcd.CMD_Display_Control | lcd.OPT_Enable_Display)
-	lcd.backLightOn()
-
-	lcd.setPosition(1, 0)
-	lcd.writeString("Autospot v0.1")
-
 	print ("Hello")
 
 	try:
@@ -931,25 +940,18 @@ if __name__ == '__main__':
 		print ("Trackindex: " + str(trackindex))
 
 		ttpsreal = savedtrack
+		
+		# Write to LCD
+		lcd.lcd_puts("Autospot",1)  
+		lcd.lcd_puts("  Listen!",2)  
+		lcd.lcd_device.write(0x08)	# Backlight on
 
 		print ("All ok - lets play!")
 		
-		# Use curses to be able ro detect key press
-		#init the curses screen
-		#stdscr = curses.initscr()
-		#use cbreak to not require a return key press
-		#curses.cbreak()
-
-		#stdscr.addstr("q-quit\nn-next track\np-prev track\nq-prevpl\nw-nextpl\no-offline\n")
-		#stdscr.addstr("Track:"+ str(ttpsreal) + "\n")
-		#stdscr.addstr("Trackindex: " + str(trackindex))
-
 		# Check physical buttons
-		#RPIO.wait_for_interrupts(threaded=True)
+		RPIO.wait_for_interrupts(threaded=True)
 
 		# Start playback
-		#stdscr.addstr("Start play\n")
-		#do_play(stdscr)
 		do_play()
 
 		# Loop forever
