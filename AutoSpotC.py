@@ -6,12 +6,13 @@
 # git push origin master
 # git push origin btnctrl
 # Update from Github
-#  git pull
+# git pull
 
 # TODO: Check memory usage as of http://www.linuxuser.co.uk/tutorials/improve-raspberry-pi-memory-usage
 
-from __future__ import unicode_literals
-import cmd
+#from __future__ import unicode_literals
+#import cmd
+import os
 import logging
 import threading
 import sys
@@ -24,21 +25,27 @@ import spotify
 import ConfigParser
 import urllib2
 
+# Detect if running on a Raspberry Pi or not
+global piornot
+if (os.uname()[4][:3]=="arm"):
+	print "Running on a pie"
+	piornot = True
+else: 
+	piornot = False
+
 # LCD
-import pylcdlib
-lcd = pylcdlib.lcd(0x20,1,1)
-lcd.lcd_puts("Welcome to",1)  
-lcd.lcd_puts("  Autospot!",2)
+if (piornot):
+	print ("Init Lcd")
+	import pylcdlib
+	lcd = pylcdlib.lcd(0x20,1,1)
+	lcd.lcd_puts("Welcome to",1)  
+	lcd.lcd_puts("  Autospot!",2)
 
-# Physical buttons
-# Ref: https://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/robot/buttons_and_switches/
-#import RPi.GPIO as GPIO
+	# Physical buttons
+	# http://pythonhosted.org/RPIO/
+	import RPIO
 
-# Try RPIO instead, may work with curses
-# http://pythonhosted.org/RPIO/
-import RPIO
-
-import time
+#import time
 prev_input = 0
 
 global curplaylist
@@ -67,14 +74,14 @@ class NullDevice():
 
 def initApp(self):
     print "In initApp"
-  # Logged in?
-  # if self.session.connection.state is spotify.ConnectionState.LOGGED_IN:
-  # print "Logged in"
-  #else :
+    # Logged in?
+    # if self.session.connection.state is spotify.ConnectionState.LOGGED_IN:
+    # print "Logged in"
+    #else :
     if session.connection.state is spotify.ConnectionState.LOGGED_OUT:
         print "Login failed, check your settings"
         sys.exit()
-  # Last played playlist
+    # Last played playlist
     global uri
     print "Last playlist:" + uri
     print "Last track: " + savedtrack
@@ -123,9 +130,10 @@ def do_play():
         #stdscr.addstr("Track #: " + str(trackindex) + "\n")
         print ("Now playing: " + nowplaying + " - " + curtrack + "\n")
 
-	lcd.lcd_clear()
-	lcd.lcd_puts(nowplaying,1)  
-	lcd.lcd_puts(curtrack,2)
+	if (piornot):
+		lcd.lcd_clear()
+		lcd.lcd_puts(nowplaying,1)  
+		lcd.lcd_puts(curtrack,2)
 	
 	print ("Track #: " + str(trackindex) + "\n")   
 	pl = str(container[playlistindex]).split("'")
@@ -704,14 +712,14 @@ if __name__ == '__main__':
     GPIO.setup(9,GPIO.IN)
     GPIO.setup(10,GPIO.IN)
     """
+    if (piornot):
+        # Add interrupts for hardware buttons
+        RPIO.add_interrupt_callback(17, gpio_callback, debounce_timeout_ms=100)
+        RPIO.add_interrupt_callback(27, gpio_callback, debounce_timeout_ms=100)
+        RPIO.add_interrupt_callback(22, gpio_callback, debounce_timeout_ms=100)
+        RPIO.add_interrupt_callback(9, gpio_callback, debounce_timeout_ms=100)
+        RPIO.add_interrupt_callback(10, gpio_callback, debounce_timeout_ms=100)
 
-    # Add interrupts for hardware buttons
-    RPIO.add_interrupt_callback(17, gpio_callback, debounce_timeout_ms=100)
-    RPIO.add_interrupt_callback(27, gpio_callback, debounce_timeout_ms=100)
-    RPIO.add_interrupt_callback(22, gpio_callback, debounce_timeout_ms=100)
-    RPIO.add_interrupt_callback(9, gpio_callback, debounce_timeout_ms=100)
-    RPIO.add_interrupt_callback(10, gpio_callback, debounce_timeout_ms=100)
-      
     print "Hello"
 
     try:
