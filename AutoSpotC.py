@@ -31,7 +31,7 @@ if (os.uname()[4][:3]=="arm"):
 	print "Running on a pie"
 	piornot = True
 else: 
-	print "Running on a PC"
+	print "Running on a PC!"
 	piornot = False
 
 # LCD
