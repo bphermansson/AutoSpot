@@ -13,9 +13,11 @@ work with Curses (which is used to enable keyboard control).
 
 Dependencies:
 sudo apt-get install libffi-dev python-dev python-alsaaudio
+(sudo dnf install libffi-devel python-devel python-alsaaudio)
 
 sudo easy_install3 -U RPIO
 sudo pip-3.2 install pyalsaaudio
+(sudo pip install pyalsaaudio)
 
 Behövs https://github.com/quick2wire/quick2wire-python-api? 
 

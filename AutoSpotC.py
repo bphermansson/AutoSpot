@@ -647,7 +647,7 @@ def showinfo(list):
     
 def internet_on():
     try:
-        response=urllib2.urlopen('http://74.125.228.100',timeout=20)
+        response=urllib2.urlopen('http://74.125.228.100',timeout=5)
         return True
     except urllib2.URLError as err: pass
     return False
@@ -809,12 +809,23 @@ if __name__ == '__main__':
         do_loaduserspl()
 
         cloaded = 0
-
+        
+        
+        
+        pl = str(container[1]).split("'")
+        
+        string = '%d playlists' % (len(container),)
+        print string
+        playlist = session.get_playlist(pl[1])
+        print "Playlist load: " + playlist.load().name
+        while not (playlist.is_loaded):
+            pass
+        
+        
         print "You have " + str(len(container)) + " playlists."
         print "Container:" + str(container[1])
 
-        pl = str(container[1]).split("'")
-
+        print "Playlist array: " + len(pl) + " items"
         if nouri == 1:
             print "nouri=1"
             print "First pl is: " + pl[1]
