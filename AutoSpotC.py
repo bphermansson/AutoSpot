@@ -197,7 +197,8 @@ def do_play():
         # seekto = dur - 5000
         # session.player.seek(seekto)
 
- 
+def container_loaded(playlist_container):
+    print('Playlist container loaded')
 
 def do_loaduserspl():
         print "Load users playlists"
@@ -207,20 +208,21 @@ def do_loaduserspl():
         #print container.is_loaded
         #print "In loaduserspl, playlists loaded"
         #print container.is_loaded
-        print "Load pl"
         # 'load' dont work if it aint stored or printed, so we store it in a temp variable 
         
         # Hide output
-        original_stdout = sys.stdout  # keep a reference to STDOUT
-        sys.stdout = NullDevice()
-        print container.load()
-        sys.stdout = original_stdout  # turn STDOUT back on
+        #original_stdout = sys.stdout  # keep a reference to STDOUT
+        #sys.stdout = NullDevice()
+        temp=container.load(30)
+        #sys.stdout = original_stdout  # turn STDOUT back on
   
         while not (container.is_loaded):
             pass
+        print container.is_loaded
         print "Ok"
         print "Container loaded="
         print container.is_loaded
+        
 
 def do_read_settings(line):
         # Load & read configuration
@@ -315,6 +317,7 @@ def on_end_of_track(session):
         do_next()
 
 def on_logged_in(session):
+        print "Logged in callback"
         pass
   
 #class Commander(cmd.Cmd):
@@ -647,7 +650,7 @@ def showinfo(list):
     
 def internet_on():
     try:
-        response=urllib2.urlopen('http://74.125.228.100',timeout=5)
+        response=urllib2.urlopen('http://google.se',timeout=5)
         return True
     except urllib2.URLError as err: pass
     return False
@@ -695,6 +698,20 @@ def cleanexit():
     print "Bye!"
     sys.exit()
 
+def get_playlists():
+    print "get_playlists"
+    #print session.playlist_container
+    playlists = session.playlist_container
+    ret = {}
+    for p in playlists:
+        p = p.load()
+        id = p.link.uri
+        name = p.name
+        # Don't add things that look like folders
+        if not "/" in name:
+            ret[name] = id
+    return ret
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
@@ -713,6 +730,8 @@ if __name__ == '__main__':
     GPIO.setup(9,GPIO.IN)
     GPIO.setup(10,GPIO.IN)
     """
+    print "Hello"
+
     if (piornot):
         # Add interrupts for hardware buttons
         RPIO.add_interrupt_callback(17, gpio_callback, debounce_timeout_ms=100)
@@ -721,10 +740,8 @@ if __name__ == '__main__':
         RPIO.add_interrupt_callback(9, gpio_callback, debounce_timeout_ms=100)
         RPIO.add_interrupt_callback(10, gpio_callback, debounce_timeout_ms=100)
 
-    print "Hello"
-
     try:
-	print "Welcome to Autospot \nCommands:"
+	print "Welcome to Autospot \n"
   
         online = internet_on()
         if online == True:
@@ -732,11 +749,13 @@ if __name__ == '__main__':
         else:
             onlinestatus="offline"
         print "We are " + onlinestatus
+        print "Create Spotify session"
   
         logged_in = threading.Event()
         logged_out = threading.Event()
         logged_out.set()
         session = spotify.Session()
+        # Events
         event_loop = spotify.EventLoop(session)
         event_loop.start()
         session.on(
@@ -746,9 +765,10 @@ if __name__ == '__main__':
             spotify.SessionEvent.END_OF_TRACK, on_end_of_track)
         session.on(
             spotify.SessionEvent.LOGGED_IN, on_logged_in)
+
   
         # Create audio sink
-        print "Let\'s start by checking your audio subsystem."
+        print "Check audio subsystem:"
         try:
             audio_driver = spotify.AlsaSink(session)
             print "Audio ok"
@@ -756,14 +776,13 @@ if __name__ == '__main__':
             logger.warning(
                 'No audio sink found; audio playback unavailable.')
 
-  
-
         # Load settings
         global nouri
         nouri=0
         global notrack
         notrack=0
         savedtrack=""
+        print "Read settings"
         do_read_settings("dummy")
   
         # See if there are stored values
@@ -802,20 +821,27 @@ if __name__ == '__main__':
         # Last played playlist
         print "Last playlist:" + uri
         print "Last track: " + savedtrack
+        
+        container=get_playlists()
+        print container
+        print container[1]
   
         # Load all users playlists
-        global container
-        global cloaded
-        do_loaduserspl()
+        #global container
+        #global cloaded
+        #do_loaduserspl()
 
-        cloaded = 0
+        #cloaded = 0
         
-        
-        
-        pl = str(container[1]).split("'")
-        
+        pl = str(container[1])
+        print container[1].load
+        print pl
+#        pl = str(container[1]).split("'")
+#        print pl
         string = '%d playlists' % (len(container),)
         print string
+        while(1):
+            pass
         playlist = session.get_playlist(pl[1])
         print "Playlist load: " + playlist.load().name
         while not (playlist.is_loaded):
@@ -823,9 +849,10 @@ if __name__ == '__main__':
         
         
         print "You have " + str(len(container)) + " playlists."
+
         print "Container:" + str(container[1])
 
-        print "Playlist array: " + len(pl) + " items"
+        print "Playlist array: " + str(len(pl)) + " items"
         if nouri == 1:
             print "nouri=1"
             print "First pl is: " + pl[1]
