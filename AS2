@@ -18,87 +18,12 @@ import sys
 import unicodedata
 import datetime
 import signal
+import time
 import spotify
-
-# To load config file
-import ConfigParser
+# Import file with settings (settings.py):
+import settings
 
 global online
-
-def do_read_settings(line):
-        # Load & read configuration
-        # Settings are stored in a file called "settings".
-        # Example:
-        # [Spotify]
-        # username=<Spotify username>
-        # pass=<Spotify password>
-
-        #print "Load"
-        config = ConfigParser.ConfigParser()
-        try:
-            print "Load settings!"
-            config.read("settings.txt")
-        except:
-            print "Settings file not found"
-            sys.exit()
-        print config.sections()
-
-        try:
-            global uri
-            uri = ""
-            options = config.options("Spotify")
-            global username
-            try:
-                username = config.get("Spotify", "username")
-            except:
-                print "No username given"
-            global password
-            password = config.get("Spotify", "pass")
-            #print "Credentials: " + username + ":" + password
-            global autoplay
-            try:
-                autoplay = config.get("General", "autoplay")
-                print "Autoplay: " + autoplay
-            except:
-                print "No autoplay setting found"
-
-            global savedtrack
-            global playlistnr
-
-            try:
-                uri = config.get("CurrentTrack", "playlist")
-                print "Get playlist..."
-            except:
-                #uri = "spotify:user:phermansson:playlist:7JaJFymSwbFcceatOd40Af"
-                pass
-            try:
-                savedtrack = config.get("CurrentTrack", "track")
-
-            except:
-                pass
-            #savedtrack = "spotify:track:583jvp9iPtaOphRa74h0A8"
-
-            #global trackindex
-            #trackindex = int(Config.get("CurrentTrack", "trackindex"))
-            #try:
-            # playlistnr = int(Config.get("playlist", "playlistnr"))
-            #except:
-            # "No playlistnumbed saved"
-            # playlistnr = 0
-        except:
-            print "Error reading settings"
-            sys.exit(0)
-
-        if len(uri)==0:
-            print "No uri saved"
-            global nouri
-            nouri = 1
-        else:
-            nouri = 0
-        if len(savedtrack)==0:
-            print "No track saved"
-        global notrack
-        notrack = 1
 
 
 def internet_on():
@@ -113,7 +38,11 @@ def internet_on():
 
 def on_logged_in(session, error_type):
     assert error_type == spotify.ErrorType.OK, 'Login failed'
+    print "Logged in"
     logged_in.set()
+
+def contLoaded(session, error_type):
+    print "Container loaded"
 
 if __name__ == '__main__':
     #logging.basicConfig(level=logging.INFO)
@@ -140,7 +69,9 @@ if __name__ == '__main__':
     end_of_track = threading.Event()
     # Register event listeners
     session.on(spotify.SessionEvent.LOGGED_IN, on_logged_in)
-    
+    #session.on(spotify.PlaylistEvent.TRACKS_ADDED, contLoaded)
+    session.on(spotify.PlaylistContainerEvent.CONTAINER_LOADED, contLoaded)
+
     # Create audio sink
     print "Check audio subsystem:"
     try:
@@ -150,14 +81,45 @@ if __name__ == '__main__':
         logger.warning(
             'No audio sink found; audio playback unavailable.')
 
-    # Load settings
-    print "Read settings"
-    do_read_settings("dummy")
-    # Assuming a previous login with remember_me=True and a proper logout
-    print "Credentials: " + username + ":" + password
-            
-    session.login(conf.username, conf.password)
-
+    # Login
+    print settings.username + " : " + settings.password
+    session.login(settings.username, settings.password)
     logged_in.wait()
+    # Load playlist container
+    container = session.playlist_container
+    container.load
+    while not container.load:
+            pass
+    print "C loaded"
+    print "You have " + str(len(container)) + " playlists."
     
+    # First playlist
+    #print "Container:" + str(container[1]) # == Playlist(u'spotify:user:phermansson:playlist:2Zkhao8VTWPfVD1oeha5I4')
+    # Form data for get_playlist
+    pl = str(container[1]).split(":")
+    pluser = pl[2]
+    pluri = pl[4].split("'")
+    #print pluser + pluri[0] # == phermansson5Lg5sAr6bKzEYCq8LbewLM
+    # Should be like "'spotify:user:fiat500c:playlist:54k50VZdvtnIPt4d8RBCmZ'"
+    getpluri = "spotify:user:" + pluser + ":playlist:" + pluri[0]
+    #print getpluri
+    playlist = session.get_playlist(getpluri)
+    #print playlist.load().name
     
+    # Create a list with the playlists tracks
+    nooftracks = len(playlist.tracks)
+    playlisturis=[]
+    for x in range(0, nooftracks):
+        curtrack = str(playlist.tracks[x])
+        curtrackuri = curtrack.split("'")
+        playlisturis.append(curtrackuri[1])
+    #print playlisturis[1]
+    track = session.get_track( playlisturis[1]).load()
+    #print track
+    trackname=track.load().name
+    curtrack = unicodedata.normalize('NFKD', trackname).encode('ascii', 'ignore')
+    print curtrack
+    session.player.load(track)
+    session.player.play()
+    time.sleep(2)
+    print session.player.state
