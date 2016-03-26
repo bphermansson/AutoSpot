@@ -20,16 +20,33 @@ import datetime
 import signal
 import time
 import spotify
+
+# Keyboard input
+import tty, termios
+
 # Import file with settings (settings.py):
 import settings
 
+import player
+
 global online
 
+# Get keyboard presses
+# http://www.instructables.com/id/Controlling-a-Raspberry-Pi-RC-Car-With-a-Keyboard/?ALLSTEPS
+def getch():
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(sys.stdin.fileno())
+        ch = sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    return ch
 
 def internet_on():
     print "Check connection"
     try:
-        response=urllib2.urlopen('http://google.se',timeout=5)
+        response=urllib2.urlopen('http://google.se',timeout=2)
         #print "On"
         return True
     except urllib2.URLError as err: pass
@@ -40,9 +57,128 @@ def on_logged_in(session, error_type):
     assert error_type == spotify.ErrorType.OK, 'Login failed'
     print "Logged in"
     logged_in.set()
+    
+def on_end_of_track(session):
+    print "Track ended"
+    nextTrack()
 
 def contLoaded(session, error_type):
     print "Container loaded"
+def nextTrack():
+    global trackindex
+    global nooftracks
+    print "In nextTrack: Pl has " + str(nooftracks) + " tracks"
+    if(trackindex<=nooftracks-1):
+        #print playlisturis[trackindex]
+        trackindex+=1
+        print "Trackindex: " + str(trackindex) + "/" + str(nooftracks) 
+        dur = track.load().duration
+        print str(dur/1000) + " sec"
+        play(playlisturis[trackindex])
+        time.sleep(2)
+        print session.player.state
+    
+        # Debug: Jump to end of track to see end of track callback
+        session.player.seek(dur-100)
+    else:
+        print "End of playlist"
+        
+def prevTrack():
+    global trackindex
+    global nooftracks
+    if(trackindex>=0):
+        print "trackindex" + str(trackindex) + "/" + str(nooftracks) 
+        print playlisturis[trackindex]
+        trackindex-=1
+        play(playlisturis[trackindex])
+    else:
+        print "End of playlist"
+        
+def changePl(dir):
+    print dir
+    global playlistnr
+    global trackindex
+    global nooftracks
+    global playlisturis
+    trackindex = 1
+    # Next or previous playlist?
+    if(dir=="next"):
+        playlistnr+=1
+    elif(dir=="prev"):
+        playlistnr-=1
+    else:
+        print "Playlist change error"
+    print "Playlist # " +str(playlistnr)
+    pl = str(container[playlistnr]).split(":")
+    #print pl
+    pluser = pl[2]
+    pluri = pl[4].split("'")
+    #print pluser + pluri[0] # == phermansson5Lg5sAr6bKzEYCq8LbewLM
+    # Should be like "'spotify:user:fiat500c:playlist:54k50VZdvtnIPt4d8RBCmZ'"
+    getpluri = "spotify:user:" + pluser + ":playlist:" + pluri[0]
+    #print getpluri
+    playlist = session.get_playlist(getpluri)
+    #print playlist
+    curpl = unicodedata.normalize('NFKD', playlist.load().name).encode('ascii', 'ignore')
+    print curpl
+    
+    # Create a list with the playlists tracks
+    nooftracks = len(playlist.tracks)
+    print str(nooftracks) + " tracks."
+    playlisturis=[]
+    for x in range(0, nooftracks):
+        curtrack = str(playlist.tracks[x])
+        curtrackuri = curtrack.split("'")
+        playlisturis.append(curtrackuri[1])
+    #print playlisturis[1]
+    track = session.get_track( playlisturis[1]).load()
+    #trackindex=0
+    #print track
+    trackname=track.load().name
+    curtrack = unicodedata.normalize('NFKD', trackname).encode('ascii', 'ignore')
+    print str(trackindex) + " " + curtrack
+    
+    dur = track.load().duration
+    print str(dur/1000) + " sec"
+    
+    session.player.load(track)
+    session.player.play()
+    time.sleep(2)
+    print session.player.state
+    
+    # Debug: Jump to end of track to see end of track callback
+    session.player.seek(dur-100)
+    
+
+def play(uri):
+    #print uri
+    track = session.get_track(uri).load()
+    #print track
+    trackname=track.load().name
+    
+    dur = track.load().duration
+    print dur
+    
+    # Get artist code
+    artist=track.load().artists
+    #print artist
+    temp = str(artist).split(":")
+    #print temp
+    art = temp[2].split("'")
+    #print art[0]
+    artisturi="spotify:artist:" + art[0]
+    artist = session.get_artist(artisturi)
+    artistname = artist.load().name
+    """artist = session.get_artist(
+...     'spotify:artist:22xRIphSN7IkPVbErICu7s')
+>>> artist.load().name"""
+    
+    curtrack = unicodedata.normalize('NFKD', trackname).encode('ascii', 'ignore')
+    curartist = unicodedata.normalize('NFKD', artistname).encode('ascii', 'ignore')
+
+    print curartist + "-" + curtrack
+    session.player.load(track)
+    session.player.play()
 
 if __name__ == '__main__':
     #logging.basicConfig(level=logging.INFO)
@@ -57,6 +193,8 @@ if __name__ == '__main__':
     except:
         pass
     
+    print "6-Next track\n4-Previous track\n8-Next Pl\n2-Prev pl"
+    
     # Assuming a spotify_appkey.key in the current dir
     session = spotify.Session()
 
@@ -69,6 +207,7 @@ if __name__ == '__main__':
     end_of_track = threading.Event()
     # Register event listeners
     session.on(spotify.SessionEvent.LOGGED_IN, on_logged_in)
+    session.on(spotify.SessionEvent.END_OF_TRACK, on_end_of_track)
     #session.on(spotify.PlaylistEvent.TRACKS_ADDED, contLoaded)
     session.on(spotify.PlaylistContainerEvent.CONTAINER_LOADED, contLoaded)
 
@@ -90,13 +229,14 @@ if __name__ == '__main__':
     container.load
     while not container.load:
             pass
-    print "C loaded"
+    print "Container loaded"
     print "You have " + str(len(container)) + " playlists."
     
     # First playlist
     #print "Container:" + str(container[1]) # == Playlist(u'spotify:user:phermansson:playlist:2Zkhao8VTWPfVD1oeha5I4')
     # Form data for get_playlist
-    pl = str(container[1]).split(":")
+    playlistnr = 1
+    pl = str(container[playlistnr]).split(":")
     pluser = pl[2]
     pluri = pl[4].split("'")
     #print pluser + pluri[0] # == phermansson5Lg5sAr6bKzEYCq8LbewLM
@@ -104,7 +244,7 @@ if __name__ == '__main__':
     getpluri = "spotify:user:" + pluser + ":playlist:" + pluri[0]
     #print getpluri
     playlist = session.get_playlist(getpluri)
-    #print playlist.load().name
+    print playlist.load().name
     
     # Create a list with the playlists tracks
     nooftracks = len(playlist.tracks)
@@ -115,6 +255,7 @@ if __name__ == '__main__':
         playlisturis.append(curtrackuri[1])
     #print playlisturis[1]
     track = session.get_track( playlisturis[1]).load()
+    trackindex=0
     #print track
     trackname=track.load().name
     curtrack = unicodedata.normalize('NFKD', trackname).encode('ascii', 'ignore')
@@ -123,3 +264,18 @@ if __name__ == '__main__':
     session.player.play()
     time.sleep(2)
     print session.player.state
+    
+    # Infinite loop
+    while True:
+        char = getch()
+        print char
+        if(char == "6"):
+            nextTrack()
+        if(char == "4"):
+            prevTrack()
+        if(char == "8"):
+            changePl("next")
+        if(char == "2"):
+            changePl("prev")
+        if(char == "q"):
+            sys.exit(1)
