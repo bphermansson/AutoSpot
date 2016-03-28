@@ -79,7 +79,7 @@ def nextTrack():
         print session.player.state
     
         # Debug: Jump to end of track to see end of track callback
-        session.player.seek(dur-100)
+        #session.player.seek(dur-100)
     else:
         print "End of playlist"
         
@@ -147,17 +147,17 @@ def changePl(dir):
     print session.player.state
     
     # Debug: Jump to end of track to see end of track callback
-    session.player.seek(dur-100)
+    #session.player.seek(dur-100)
     
 
-def play(uri):
-    #print uri
-    track = session.get_track(uri).load()
+def play(curtrack):
+    print "In play, curtrack=" + str(curtrack)
+    track = session.get_track(curtrack).load()
     #print track
     trackname=track.load().name
     
     dur = track.load().duration
-    print dur
+    print "Track:" + trackname + " length:" + str(dur)
     
     # Get artist code
     artist=track.load().artists
@@ -179,9 +179,55 @@ def play(uri):
     print curartist + "-" + curtrack
     session.player.load(track)
     session.player.play()
+    
+def loadPlaylist(getpluri):
+    # Create a list with the playlists tracks
+    global playlisturis
+    global nooftracks
+    print "In loadPlaylist"
+    print "getpluri=" + getpluri
+    playlist = session.get_playlist(getpluri)
+    print "Playlist name: " + playlist.load().name
+    nooftracks = len(playlist.tracks)
+    playlisturis=[]
+    for x in range(0, nooftracks):
+        curtrack = str(playlist.tracks[x])
+        curtrackuri = curtrack.split("'")
+        playlisturis.append(curtrackuri[1])
+    #print playlisturis[1]
+    track = session.get_track( playlisturis[1]).load()
+    trackindex=0
+    #print track
+    trackname=track.load().name
+    curtrack = unicodedata.normalize('NFKD', trackname).encode('ascii', 'ignore')
+    print "First track: " + curtrack    
+    play(curtrackuri[1])
+
+def cleanexit():
+    # Save info
+    global uri
+    global trackindex
+    global playlistnr
+    print "Username: " + username
+    print "Password: " + password
+    print "Playlist:" + str(uri) + "(" + str(playlistnr) + "), track " + str(trackindex)
+    
+    file = open("settings.py", "w")
+    file.write("username=\"" + username+"\"\n")
+    file.write("password=\"" + password+"\"\n")
+    file.write("playlist=\"" + str(uri)+"\"\n")
+    file.write("trackindex=\"" + str(trackindex)+"\"\n")
+    file.write("playlistnr=\"" + str(playlistnr)+"\"\n")
+    file.close()
+    
+    print "Bye!"
+    sys.exit(1)
+
 
 if __name__ == '__main__':
     #logging.basicConfig(level=logging.INFO)
+    global playlistnr
+    
     try:
         print "Welcome to Autospot \n"
         online = internet_on()
@@ -219,10 +265,28 @@ if __name__ == '__main__':
     except ImportError:
         logger.warning(
             'No audio sink found; audio playback unavailable.')
-
+    try:
+        pl = settings.playlist
+        trackindex = settings.trackindex
+        strPlaylistnr=settings.playlistnr
+        playlistnr = int(strPlaylistnr)
+        print "We have a saved playlist"
+        print "Playlist" + str(pl) + ", (" + str(playlistnr) + "), track " + str(trackindex)
+    except: 
+        print "Unexpected error:", sys.exc_info()[0]
+        print "No playlist saved!"
+        pl=""
+        trackindex=0
+        playlistnr=0
+    try:
+        username = settings.username
+        password = settings.password
+        print username + "-" + password
+    except: 
+        print "No username or password given"
+        sys.exit(0)
     # Login
-    print settings.username + " : " + settings.password
-    session.login(settings.username, settings.password)
+    session.login(username, password)
     logged_in.wait()
     # Load playlist container
     container = session.playlist_container
@@ -234,36 +298,26 @@ if __name__ == '__main__':
     
     # First playlist
     #print "Container:" + str(container[1]) # == Playlist(u'spotify:user:phermansson:playlist:2Zkhao8VTWPfVD1oeha5I4')
-    # Form data for get_playlist
-    playlistnr = 1
-    pl = str(container[playlistnr]).split(":")
-    pluser = pl[2]
-    pluri = pl[4].split("'")
-    #print pluser + pluri[0] # == phermansson5Lg5sAr6bKzEYCq8LbewLM
-    # Should be like "'spotify:user:fiat500c:playlist:54k50VZdvtnIPt4d8RBCmZ'"
-    getpluri = "spotify:user:" + pluser + ":playlist:" + pluri[0]
-    #print getpluri
-    playlist = session.get_playlist(getpluri)
-    print playlist.load().name
+    if not pl:
+        global uri
+        # No saved playlist, get the first
+        # Form data for get_playlist
+        playlistnr = 1
+        pl = str(container[playlistnr]).split(":")
+        pluser = pl[2]
+        pluri = pl[4].split("'")
+        uri = pluri[0]
+        print "Uri:" + str(uri)
+        #print pluser + pluri[0] # == phermansson5Lg5sAr6bKzEYCq8LbewLM
+        # Should be like "'spotify:user:fiat500c:playlist:54k50VZdvtnIPt4d8RBCmZ'"
+        getpluri = "spotify:user:" + pluser + ":playlist:" + pluri[0]
+        #print getpluri
+    else: 
+        getpluri = "spotify:user:" + username + ":playlist:" + pl
+        print "Using saved playlist: " + getpluri
     
-    # Create a list with the playlists tracks
-    nooftracks = len(playlist.tracks)
-    playlisturis=[]
-    for x in range(0, nooftracks):
-        curtrack = str(playlist.tracks[x])
-        curtrackuri = curtrack.split("'")
-        playlisturis.append(curtrackuri[1])
-    #print playlisturis[1]
-    track = session.get_track( playlisturis[1]).load()
-    trackindex=0
-    #print track
-    trackname=track.load().name
-    curtrack = unicodedata.normalize('NFKD', trackname).encode('ascii', 'ignore')
-    print curtrack
-    session.player.load(track)
-    session.player.play()
-    time.sleep(2)
-    print session.player.state
+    #getpluri is the current playlist
+    loadPlaylist(getpluri)
     
     # Infinite loop
     while True:
@@ -277,5 +331,5 @@ if __name__ == '__main__':
             changePl("next")
         if(char == "2"):
             changePl("prev")
-        if(char == "q"):
-            sys.exit(1)
+        if(char == "q"):           
+            cleanexit()
