@@ -73,10 +73,10 @@ def nextTrack():
     print "In nextTrack: Pl has " + str(nooftracks) + " tracks. trackindex = " + str(trackindex)
     inttrack = int(trackindex)
     intnooftracks = int(nooftracks)
-    if(inttrack<=intnooftracks-1):
+    if(inttrack<intnooftracks-1):
         inttrack+=1
         print "Trackindex: " + str(inttrack) + "/" + str(intnooftracks)
-        print playlisturis
+        #print playlisturis
         #dur = track.load().duration
         #print str(dur/1000) + " sec"
         trackindex=str(inttrack)
@@ -88,6 +88,7 @@ def nextTrack():
         #session.player.seek(dur-100)
     else:
         print "End of playlist"
+        changePl("next")
         
 def prevTrack():
     global trackindex
@@ -107,7 +108,7 @@ def changePl(dir):
     global nooftracks
     global playlisturis
     global pl
-    trackindex = 1
+    trackindex = 0
     # Next or previous playlist?
     if(dir=="next"):
         playlistnr+=1
@@ -150,6 +151,14 @@ def changePl(dir):
     
     dur = track.load().duration
     print str(dur/1000) + " sec"
+
+    # Available offline?
+    offline = playlist.offline_status
+    if offline==0:
+        offline_status="Available offline"
+    else:
+        offline_status="Not available offline"
+    lblOffline["text"]=offline_status
 
     play(playlisturis[1])
 
@@ -195,9 +204,8 @@ def play(curtrack):
     session.player.play()
     #status["text"]= "Playing"
 
-
     # Debug: Jump to end of track to see end of track callback
-    session.player.seek(dur-100)
+    #session.player.seek(dur-100)
 
 def playerPause():
     status["text"]="Play/Pause"
@@ -286,6 +294,7 @@ def cleanexit():
     global trackindex
     global playlistnr
     global pl
+    print "In cleanexit"
     print "Username: " + username
     print "Password: " + password
     print "Playlist:" + str(pl) + "(" + str(playlistnr) + "), track " + str(trackindex)
@@ -321,7 +330,8 @@ def keyinput(event):
 def updateGui():
     #status["text"]="Updated"
     lblArtist["text"]= artistname
-    lblTrack["text"]= trackname
+    lblTrack["text"]= str(trackindex).zfill(2) + "-" + trackname    # zfill adds a leading 0
+
     ps=session.player.state
     status["text"]=ps
     # Update Gui every second
@@ -429,8 +439,11 @@ if __name__ == '__main__':
 
     # Gui
     root = Tk()
-    c = Canvas(root,height=240,width=320)
-    c.pack()
+    root.minsize(width=320, height=240)
+    root.maxsize(width=320, height=240)
+
+    #c = Canvas(root,height=240,width=320)
+    #c.pack()
 
 #    w = Label(root, text="Red Sun", bg="red", fg="white")
 #    w.pack(fill=X)
@@ -440,7 +453,7 @@ if __name__ == '__main__':
     lblInfo.place(width=320, height=40)
 
 
-    status = Label(root,text="Status",fg='Black',bg='White')
+    status = Label(root,text="Status",fg='Black',bg='White',font=("Verdana", 16))
     #status.place(width=120, height=25)
     status.pack(side=TOP)
     status.pack(fill=X)
@@ -453,7 +466,7 @@ if __name__ == '__main__':
     #lblTrack.place(x = 20, y = 50, width=200, height=25)
     #status = Label(root,text="Status",fg='Black',bg='White')
     #status.place(x = 20, y = 10, width=120, height=25)
-    lblOffline = Label(root,text="Offline",fg='Black',bg='Yellow')
+    lblOffline = Label(root,text="Offline status",fg='Black',bg='Yellow')
     lblOffline.pack(fill=X, side=TOP)
     #lblOffline.place(x = 20, y = 75, width=180, height=25)
 
