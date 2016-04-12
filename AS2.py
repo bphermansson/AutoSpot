@@ -28,8 +28,6 @@ import tty, termios
 # Import file with settings (settings.py):
 import settings
 
-import player
-
 global online
 
 # Get keyboard presses
@@ -174,6 +172,8 @@ def play(curtrack):
     global trackindex
     global artistname
     global trackname
+    global trackofflinestatus, offlinetxt
+
     print "In play, curtrack=" + str(curtrack)
     track = session.get_track(curtrack).load()
     #print track
@@ -201,6 +201,20 @@ def play(curtrack):
     trackname = curtrack # Global var for Gui
     print curartist + "-" + curtrack
     session.player.load(track)
+
+    # Track available offline?
+    trackofflinestatus = track.offline_status
+    if trackofflinestatus == 0:
+        offlinetxt="Not available offline"
+    if trackofflinestatus == 1:
+        offlinetxt = "Available offline"
+    if trackofflinestatus == 2:
+	    offlinetxt = "Download in progress"
+    if trackofflinestatus == 3:
+        offlinetxt = "Waiting for download\n"
+    print "Offline? " + str(trackofflinestatus) + " - " + offlinetxt
+
+
     session.player.play()
     #status["text"]= "Playing"
 
@@ -272,8 +286,11 @@ def pldownload():
         playlist.set_offline_mode(offline=False)
 
 def offline_update(dummy):
+    global trackofflinestatus
+
     print "Offline status updated"
-    offlinestatus = playlist.offline_status
+    #offlinestatus = playlist.offline_status
+    offlinestatus=trackofflinestatus
     offlinetxt=""
     if offlinestatus == 0:
 	    offlinetxt="Not available offline"
@@ -287,6 +304,72 @@ def offline_update(dummy):
     # Print and update gui
     print str(offlinestatus) + ":" + offlinetxt
     lblOffline["text"]= offlinetxt
+
+def onoffline():
+    print "In onoffline"
+    #spotify.connection.Connection._allow_network=False
+    #spotify.ConnectionType=1
+    if spotify.connection.Connection.allow_network:
+        spotify.connection.Connection.allow_network=False
+    else:
+        spotify.connection.Connection.allow_network=True
+
+    #print "Conn state: " + str(session.connection.state)
+    #session.connection._allow_network = False
+    #print "New conn state: " + str(session.connection.state)
+    print spotify.connection.Connection.allow_network
+    print session.connection.state
+    #session.connection_state=4
+
+def loadplaylists():
+    global container
+    # Load playlist container
+    print "In loadplaylists"
+    container = session.playlist_container
+    #container.load
+    while not container.load:
+            pass
+    print "Container loaded"
+    print "You have " + str(len(container)) + " playlists."
+    v=0
+    for items in container:
+        left = str(items)[:14]
+        contItem = str(items).split(":")
+        # Exclude Playlist folder entries
+        if not left=="PlaylistFolder":
+            #print items
+            contUri = contItem[4].split("'")
+            contUriuri = contUri[0]
+            #print "Item uri:"  + str(v) + "----" + str(contUriuri)
+            localuri = str(items).split("'")
+            playlist = session.get_playlist(localuri[1])
+            if not playlist.offline_status == 0:
+                print localuri[1]
+
+            v+=1
+
+
+def conn_state_change(session):
+    global lblSpotonline
+    global onlinetext
+    #lblSpotonline["text"]="Conn state changed" - This doesnt work ,we get here before gui is set up
+
+    print "Conn state changed: " + str(session.connection.state)
+    if (root):
+        #print "Window ok " + str(root)
+        #if (lblSpotonline):
+        spotonstatus=session.connection.state
+        if (spotonstatus==1):
+            onlinetext="1,Online"
+        elif (spotonstatus==2):
+            onlinetext="2"
+        elif (spotonstatus==3):
+            onlinetext="3"
+        elif (spotonstatus==4):
+            onlinetext="4,Offline"
+        else:
+            onlinetext="Error"
+        #lblSpotonline["text"]=onlinetext
 
 def cleanexit():
     # Save info
@@ -327,21 +410,59 @@ def keyinput(event):
         pldownload()
     elif key.upper() == '5':
         playerPause()
+    elif key.upper() == '3':
+        onoffline()
+
 def updateGui():
-    #status["text"]="Updated"
+    global artistname, onlinetext, offlinetxt
+
+    #print "In updateGui"
+
+    #print "Sync status: " + str(session.offline.sync_status)
+    tts=session.offline.tracks_to_sync
+    #print "Tracks to sync: " + str(tts)
+    #print "No of offline pls: " + str(session.offline.num_playlists)
+    if tts>0:
+        dltext=" " + str(tts) + " left"
+    else:
+        dltext=""
+
     lblArtist["text"]= artistname
     lblTrack["text"]= str(trackindex).zfill(2) + "-" + trackname    # zfill adds a leading 0
+    lblSpotonline["text"]=onlinetext
+    lblOffline["text"]= offlinetxt + dltext
 
     ps=session.player.state
     status["text"]=ps
     # Update Gui every second
     root.after(1000, updateGui)
 
+def on_closing():
+    cleanexit()
+    root.destroy()
 
 if __name__ == '__main__':
     #logging.basicConfig(level=logging.INFO)
     global playlistnr
-    global pl
+    global pl, artistname, trackindex, trackname, session, offlinetxt, container
+    global lblSpotonline
+    artistname="Artist"
+    trackindex=0
+    trackname="Trackname"
+    offlinetxt=""
+
+    # Create Spotify session
+    # Assuming a spotify_appkey.key in the current dir
+    session = spotify.Session()
+    spotonline=session.connection.state
+
+    infotext = "6-Next tr 4-Prev tr 8-Next Pl 2-Prev pl 1-Download 5-Pause 3-On/Offline q-Quit"
+    print infotext
+
+    # Gui, uses Tkinter
+    root = Tk()
+    root.minsize(width=320, height=240)
+    root.maxsize(width=320, height=240)
 
     try:
         print "Welcome to Autospot \n"
@@ -354,11 +475,6 @@ if __name__ == '__main__':
     except:
         pass
 
-    infotext = "6-Next tr 4-Prev tr 8-Next Pl 2-Prev pl 1-Download 5-Pause q-Quit"
-    print infotext
-    
-    # Assuming a spotify_appkey.key in the current dir
-    session = spotify.Session()
 
     # Process events in the background
     loop = spotify.EventLoop(session)
@@ -367,12 +483,14 @@ if __name__ == '__main__':
     # Events for coordination
     logged_in = threading.Event()
     end_of_track = threading.Event()
+
     # Register event listeners
     session.on(spotify.SessionEvent.LOGGED_IN, on_logged_in)
     session.on(spotify.SessionEvent.END_OF_TRACK, on_end_of_track)
     #session.on(spotify.PlaylistEvent.TRACKS_ADDED, contLoaded)
     session.on(spotify.PlaylistContainerEvent.CONTAINER_LOADED, contLoaded)
     session.on(spotify.SessionEvent.OFFLINE_STATUS_UPDATED,offline_update)
+    session.on(spotify.SessionEvent.CONNECTION_STATE_UPDATED, conn_state_change)
 
     # Create audio sink
     print "Check audio subsystem:"
@@ -405,6 +523,8 @@ if __name__ == '__main__':
     # Login
     session.login(username, password)
     logged_in.wait()
+
+    """
     # Load playlist container
     container = session.playlist_container
     container.load
@@ -412,7 +532,9 @@ if __name__ == '__main__':
             pass
     print "Container loaded"
     print "You have " + str(len(container)) + " playlists."
-    
+    """
+    loadplaylists()
+
     # First playlist
     #print "Container:" + str(container[1]) # == Playlist(u'spotify:user:phermansson:playlist:2Zkhao8VTWPfVD1oeha5I4')
     if not pl:
@@ -437,48 +559,39 @@ if __name__ == '__main__':
     #getpluri is the current playlist
     loadPlaylist(getpluri, pl)
 
-    # Gui
-    root = Tk()
-    root.minsize(width=320, height=240)
-    root.maxsize(width=320, height=240)
-
-    #c = Canvas(root,height=240,width=320)
-    #c.pack()
-
-#    w = Label(root, text="Red Sun", bg="red", fg="white")
-#    w.pack(fill=X)
-
     # Gui elements
+
     lblInfo = Label(root,text=infotext,fg='White',bg='Grey',font=("Helvetica", 10), wraplength=300, justify=LEFT)
     lblInfo.place(width=320, height=40)
+    lblInfo.pack(fill=X, side=TOP)
 
+    lblSpotonline = Label(root,text="Spotonline",fg='Black',bg='White',font=("Verdana", 12))
+    lblSpotonline.pack(fill=X, side=TOP)
 
     status = Label(root,text="Status",fg='Black',bg='White',font=("Verdana", 16))
-    #status.place(width=120, height=25)
-    status.pack(side=TOP)
-    status.pack(fill=X)
-    #status.place(x = 20, y = 10, width=120, height=25)
+    status.pack(fill=X, side=TOP)
+
     lblArtist = Label(root,text="Artist",fg='Black',bg='White',font=("Verdana", 20))
     lblArtist.pack(fill=X, side=TOP)
-    #lblArtist.place(x = 20, y = 30, width=200, height=25)
-    lblTrack = Label(root,text="Track",fg='Black',bg='White',font=("Verdana", 16))
+
+    lblTrack = Label(root,text="Track",fg='Black',bg='White',font=("Verdana", 14))
     lblTrack.pack(fill=X, side=TOP)
-    #lblTrack.place(x = 20, y = 50, width=200, height=25)
-    #status = Label(root,text="Status",fg='Black',bg='White')
-    #status.place(x = 20, y = 10, width=120, height=25)
+
     lblOffline = Label(root,text="Offline status",fg='Black',bg='Yellow')
     lblOffline.pack(fill=X, side=TOP)
-    #lblOffline.place(x = 20, y = 75, width=180, height=25)
-
-
 
     # Keyboard input
     root.bind('<Key>', keyinput)
     # Update gui
     root.after(1, updateGui)
 
+    # When window is closed
+    root.protocol("WM_DELETE_WINDOW", on_closing)
+
+    #Start gui
     # Main loop
     root.mainloop()
+
 
     """
     # Infinite loop
