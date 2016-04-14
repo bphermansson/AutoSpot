@@ -55,7 +55,7 @@ def internet_on():
 
 def on_logged_in(session, error_type):
     assert error_type == spotify.ErrorType.OK, 'Login failed'
-    print "Logged in"
+    print "In on_logged_in, Logged in"
     logged_in.set()
     
 def on_end_of_track(session):
@@ -242,7 +242,8 @@ def loadPlaylist(getpluri, pl):
     print "getpluri=" + getpluri
     print "pl=" + pl
     playlist = session.get_playlist(getpluri)
-    print "Playlist name: " + playlist.load().name
+    plnameenc = unicodedata.normalize('NFKD', playlist.load().name).encode('ascii', 'ignore')
+    print "Playlist name: " + plnameenc
 
     # Offline status
     offlinestatus = playlist.offline_status
@@ -352,6 +353,7 @@ def loadplaylists():
 def conn_state_change(session):
     global lblSpotonline
     global onlinetext
+    global spotonstatus
     #lblSpotonline["text"]="Conn state changed" - This doesnt work ,we get here before gui is set up
 
     print "Conn state changed: " + str(session.connection.state)
@@ -370,6 +372,8 @@ def conn_state_change(session):
         else:
             onlinetext="Error"
         #lblSpotonline["text"]=onlinetext
+    if session.connection.state is spotify.ConnectionState.LOGGED_IN:
+        logged_in.set()
 
 def cleanexit():
     # Save info
@@ -482,6 +486,7 @@ if __name__ == '__main__':
 
     # Events for coordination
     logged_in = threading.Event()
+    logged_out = threading.Event()
     end_of_track = threading.Event()
 
     # Register event listeners
@@ -498,8 +503,10 @@ if __name__ == '__main__':
         audio_driver = spotify.AlsaSink(session)
         print "Audio ok"
     except ImportError:
-        logger.warning(
-            'No audio sink found; audio playback unavailable.')
+        #logger.warning(
+        #    'No audio sink found; audio playback unavailable.')
+        print "No audio sink found; audio playback unavailable."
+        sys.exit()
     try:
         pl = settings.playlist
         trackindex = settings.trackindex
@@ -520,9 +527,24 @@ if __name__ == '__main__':
     except: 
         print "No username or password given"
         sys.exit(0)
+      
     # Login
-    session.login(username, password)
-    logged_in.wait()
+    #session.login(username, password)
+    #logged_in.wait()
+
+    remUser = session.remembered_user_name
+    print "Remembered user: " + str(remUser)
+    if not remUser:
+      print "Wait for login " + username 
+      session.login(username, password, remember_me=True)
+      logged_in.wait()
+    print str(session.user_name) + " is logged in"
+    
+    # Wait til we are online
+    spotonstatus=session.connection.state
+    while not (spotonstatus==1):
+      pass
+
 
     """
     # Load playlist container
