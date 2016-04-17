@@ -20,7 +20,7 @@ import signal
 import time
 import spotify
 from Tkinter import *
-
+from time import sleep
 
 # Keyboard input
 import tty, termios
@@ -91,13 +91,17 @@ def nextTrack():
 def prevTrack():
     global trackindex
     global nooftracks
-    if(trackindex>=0):
-        print "trackindex" + str(trackindex) + "/" + str(nooftracks) 
-        print playlisturis[trackindex]
-        trackindex-=1
-        play(playlisturis[trackindex])
+    global inttrack
+    print "In prevTrack: Pl has " + str(nooftracks) + " tracks. trackindex = " + str(trackindex)
+    inttrack = int(trackindex)
+    if(inttrack>=0):
+	inttrack -= 1
+        print "trackindex: " + str(inttrack) + "/" + str(nooftracks) 
+        #print playlisturis[trackindex]
+        trackindex=str(inttrack)
+        play(playlisturis[int(trackindex)])
     else:
-        print "End of playlist"
+        print "Start of playlist"
         
 def changePl(dir):
     print dir
@@ -170,6 +174,7 @@ def changePl(dir):
 
 def play(curtrack):
     global trackindex
+    #global inttrack
     global artistname
     global trackname
     global trackofflinestatus, offlinetxt
@@ -195,11 +200,11 @@ def play(curtrack):
     """artist = session.get_artist(
 ...     'spotify:artist:22xRIphSN7IkPVbErICu7s')
 >>> artist.load().name"""
-    
+    global trackindex
     curtrack = unicodedata.normalize('NFKD', trackname).encode('ascii', 'ignore')
     curartist = unicodedata.normalize('NFKD', artistname).encode('ascii', 'ignore')
     trackname = curtrack # Global var for Gui
-    print curartist + "-" + curtrack
+    print "Artist: " + curartist + "- Track: " + curtrack +"-"+ str(trackindex)
     session.player.load(track)
 
     # Track available offline?
@@ -213,7 +218,6 @@ def play(curtrack):
     if trackofflinestatus == 3:
         offlinetxt = "Waiting for download\n"
     print "Offline? " + str(trackofflinestatus) + " - " + offlinetxt
-
 
     session.player.play()
     #status["text"]= "Playing"
@@ -361,14 +365,16 @@ def conn_state_change(session):
         #print "Window ok " + str(root)
         #if (lblSpotonline):
         spotonstatus=session.connection.state
-        if (spotonstatus==1):
-            onlinetext="1,Online"
+        if (spotonstatus==0):
+            onlinetext="Logged out"
+        elif (spotonstatus==1):
+            onlinetext="Online"
         elif (spotonstatus==2):
-            onlinetext="2"
+            onlinetext="Disconnected"
         elif (spotonstatus==3):
-            onlinetext="3"
+            onlinetext="Undefined"
         elif (spotonstatus==4):
-            onlinetext="4,Offline"
+            onlinetext="Offline"
         else:
             onlinetext="Error"
         #lblSpotonline["text"]=onlinetext
@@ -381,7 +387,7 @@ def cleanexit():
     global trackindex
     global playlistnr
     global pl
-    print "In cleanexit"
+    print "In cleanexit, values to save:"
     print "Username: " + username
     print "Password: " + password
     print "Playlist:" + str(pl) + "(" + str(playlistnr) + "), track " + str(trackindex)
@@ -418,7 +424,7 @@ def keyinput(event):
         onoffline()
 
 def updateGui():
-    global artistname, onlinetext, offlinetxt
+    global artistname, onlinetext, offlinetxt, trackname
 
     #print "In updateGui"
 
@@ -431,8 +437,17 @@ def updateGui():
     else:
         dltext=""
 
+    tracknamelength = len(trackname)
+    #print "Trackname has " + str(tracknamelength) + " chars"
+    if tracknamelength>20:
+      trackname=trackname[0:20]	# Cut trackname
+      
+    #ti=int(trackindex)+1	# For correct display. Trackindex starts at 0 but we want it displayed as track # 1
+    ti=int(trackindex)
+    ti+=1
+
     lblArtist["text"]= artistname
-    lblTrack["text"]= str(trackindex).zfill(2) + "-" + trackname    # zfill adds a leading 0
+    lblTrack["text"]= str(ti).zfill(2) + "-" + trackname    # zfill adds a leading 0
     lblSpotonline["text"]=onlinetext
     lblOffline["text"]= offlinetxt + dltext
 
@@ -468,8 +483,12 @@ if __name__ == '__main__':
     root.minsize(width=320, height=240)
     root.maxsize(width=320, height=240)
 
+    print "Welcome to Autospot"
+   
+    # Check for internet connection
+    # Use libspotifys online-check instead
+    """
     try:
-        print "Welcome to Autospot \n"
         online = internet_on()
         if online == True:
             onlinestatus="online"
@@ -478,7 +497,7 @@ if __name__ == '__main__':
         print "Online?: " + onlinestatus
     except:
         pass
-
+    """
 
     # Process events in the background
     loop = spotify.EventLoop(session)
@@ -492,7 +511,6 @@ if __name__ == '__main__':
     # Register event listeners
     session.on(spotify.SessionEvent.LOGGED_IN, on_logged_in)
     session.on(spotify.SessionEvent.END_OF_TRACK, on_end_of_track)
-    #session.on(spotify.PlaylistEvent.TRACKS_ADDED, contLoaded)
     session.on(spotify.PlaylistContainerEvent.CONTAINER_LOADED, contLoaded)
     session.on(spotify.SessionEvent.OFFLINE_STATUS_UPDATED,offline_update)
     session.on(spotify.SessionEvent.CONNECTION_STATE_UPDATED, conn_state_change)
@@ -523,7 +541,7 @@ if __name__ == '__main__':
     try:
         username = settings.username
         password = settings.password
-        print username + "-" + password
+        print "User credentials from settings file: " + username + "-" + password
     except: 
         print "No username or password given"
         sys.exit(0)
@@ -538,14 +556,20 @@ if __name__ == '__main__':
       print "Wait for login " + username 
       session.login(username, password, remember_me=True)
       logged_in.wait()
+    else:
+      session.relogin()	# Spotify remembers us, just relogin
+      logged_in.wait()
+
     print str(session.user_name) + " is logged in"
     
     # Wait til we are online
     spotonstatus=session.connection.state
-    while not (spotonstatus==1):
-      pass
+    while not (spotonstatus==1):	# '1' = logged in
+      spotonstatus=session.connection.state
+      print spotonstatus
+      sleep(1)
 
-
+    print "Logged in, lets load playlists"
     """
     # Load playlist container
     container = session.playlist_container
