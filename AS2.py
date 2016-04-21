@@ -2,7 +2,7 @@
 # -*- coding: iso-8859-1 -*-
 
 # Upload changes to Github:
-# git commit -a
+# git commit AS2.py
 # git push origin master
 # Update from Github
 # git pull
@@ -185,7 +185,12 @@ def play(curtrack):
     trackname=track.load().name
     
     dur = track.load().duration
-    print "Track:" + str(trackindex) + "-" + trackname + " length:" + str(dur)
+    
+    #    plnameenc = unicodedata.normalize('NFKD', playlist.load().name).encode('ascii', 'ignore')
+
+    #trackinfo = unicodedata.normalize('NFKD', trackname.encode('ascii', 'ignore'))
+    trackinfo = trackname.encode('utf-8')
+    print "Track:" + str(trackindex) + "-" + trackinfo + " length:" + str(dur)
 
     # Get artist code
     artist=track.load().artists
@@ -314,15 +319,15 @@ def onoffline():
     print "In onoffline"
     #spotify.connection.Connection._allow_network=False
     #spotify.ConnectionType=1
-    if spotify.connection.Connection.allow_network:
-        spotify.connection.Connection.allow_network=False
+    if session.connection.allow_network == True:
+        session.connection.allow_network = False
     else:
-        spotify.connection.Connection.allow_network=True
-
+	session.connection.allow_network = True
+	
     #print "Conn state: " + str(session.connection.state)
     #session.connection._allow_network = False
     #print "New conn state: " + str(session.connection.state)
-    print spotify.connection.Connection.allow_network
+    print "Allow network= " + str(session.connection.allow_network)
     print session.connection.state
     #session.connection_state=4
 
@@ -331,6 +336,8 @@ def loadplaylists():
     # Load playlist container
     print "In loadplaylists"
     container = session.playlist_container
+    spotonstatus=session.connection.state	# Online or not? 1=offline, 2=online
+
     #container.load
     while not container.load:
             pass
@@ -348,6 +355,8 @@ def loadplaylists():
             #print "Item uri:"  + str(v) + "----" + str(contUriuri)
             localuri = str(items).split("'")
             playlist = session.get_playlist(localuri[1])
+            #print str(playlist) + "---" + str(playlist.offline_status)
+            
             if not playlist.offline_status == 0:
                 print localuri[1]
 
@@ -434,6 +443,7 @@ def updateGui():
     #print "No of offline pls: " + str(session.offline.num_playlists)
     if tts>0:
         dltext=" " + str(tts) + " left"
+        print str(dltext)
     else:
         dltext=""
 
