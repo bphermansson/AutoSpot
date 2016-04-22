@@ -19,7 +19,7 @@ sudo easy_install3 -U RPIO
 sudo pip-3.2 install pyalsaaudio
 (sudo pip install pyalsaaudio)
 
-Behövs https://github.com/quick2wire/quick2wire-python-api? 
+BehÃ¶vs https://github.com/quick2wire/quick2wire-python-api? 
 
 Install libspotify:
 For 32-bit:
@@ -47,3 +47,7 @@ sudo python setup.py install
 
 
 Package built with instructions from https://packaging.python.org/en/latest/distributing.html#setup-for-project-distributors
+
+Some notes on operatingsystem for the Pi. I still have to find the best system, it should boot quick! Buildroot-rpi is doing that, 
+but it's hard to build to support libspotify. Arch Linux boots in 13 seconds to command line, good. Tiny Core, small but slow to load 
+due to the system with dynamically loading extensions. 
