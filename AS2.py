@@ -180,11 +180,13 @@ def play(curtrack):
     global trackofflinestatus, offlinetxt
 
     print "In play, curtrack=" + str(curtrack)
-    track = session.get_track(curtrack).load()
+    #track = session.get_track(curtrack).load()
+    track = session.get_track(curtrack)
+    
     #print track
     trackname=track.load().name
     
-    dur = track.load().duration
+    dur = track.duration
     
     #    plnameenc = unicodedata.normalize('NFKD', playlist.load().name).encode('ascii', 'ignore')
 
@@ -296,8 +298,29 @@ def pldownload():
         playlist.set_offline_mode(offline=False)
 
 def offline_update(dummy):
+    # Called when offline sync status is updated.
+    
     global trackofflinestatus
-
+    global curtrack
+    
+    print "Offline sync status updated"
+    
+    """
+     class spotify.offline.Offline(session)
+        tracks_to_sync
+     -> tts = session.offline.tracks_to_sync
+     
+     class spotify.Track(session, uri=None, sp_track=None, add_ref=True)
+	 offline_status
+     -> tos = session.Track.offline_status
+    """
+    if (curtrack):
+      track = session.get_track(curtrack)
+      tos = track.offline_status
+      print "Tos:" + str(tos)
+    
+    #trackofflinestatus=session.Track.offline_status
+    
     print "Offline status updated"
     #offlinestatus = playlist.offline_status
     offlinestatus=trackofflinestatus
@@ -437,15 +460,24 @@ def updateGui():
 
     #print "In updateGui"
 
+    # Are there offline tracks to sync?
     #print "Sync status: " + str(session.offline.sync_status)
+
+    #class spotify.offline.Offline(session)
+    #    tracks_to_sync
+    
     tts=session.offline.tracks_to_sync
     #print "Tracks to sync: " + str(tts)
     #print "No of offline pls: " + str(session.offline.num_playlists)
     if tts>0:
         dltext=" " + str(tts) + " left"
         print str(dltext)
+        lblOffline["bg"]='Red'
     else:
         dltext=""
+	lblOffline["bg"]='Yellow'
+    #sync_in_progress = session.offline.sync_status
+    #print sync_in_progress
 
     tracknamelength = len(trackname)
     #print "Trackname has " + str(tracknamelength) + " chars"
@@ -474,11 +506,12 @@ if __name__ == '__main__':
     #logging.basicConfig(level=logging.INFO)
     global playlistnr
     global pl, artistname, trackindex, trackname, session, offlinetxt, container
-    global lblSpotonline
+    global lblSpotonline, curtrack
     artistname="Artist"
     trackindex=0
     trackname="Trackname"
     offlinetxt=""
+    curtrack=""
 
     # Create Spotify session
     # Assuming a spotify_appkey.key in the current dir
@@ -492,6 +525,7 @@ if __name__ == '__main__':
     root = Tk()
     root.minsize(width=320, height=240)
     root.maxsize(width=320, height=240)
+    root.wm_title("Autospot")
 
     print "Welcome to Autospot"
    
