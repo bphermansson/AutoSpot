@@ -51,3 +51,12 @@ Package built with instructions from https://packaging.python.org/en/latest/dist
 Some notes on operatingsystem for the Pi. I still have to find the best system, it should boot quick! Buildroot-rpi is doing that, 
 but it's hard to build to support libspotify. Arch Linux boots in 13 seconds to command line, good. Tiny Core, small but slow to load 
 due to the system with dynamically loading extensions. 
+
+Arch Linux:
+pacman -S python2-pip gcc alsa-lib wget make
+pip2 install pyalsaaudio
+wget https://developer.spotify.com/download/libspotify/libspotify-12.1.51-Linux-i686-release.tar.gz
+tar zxvf libspotify*
+cd libspotify*
+sudo make install prefix=/usr/local
+pip2 install pyspotify
