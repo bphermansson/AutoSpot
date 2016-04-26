@@ -63,7 +63,12 @@ def on_end_of_track(session):
     nextTrack()
 
 def contLoaded(session, error_type):
+    global BoolcontLoaded
     print "Container loaded"
+    BoolcontLoaded = True
+    if container.is_loaded is True:
+	cont_loaded_event.set()
+    
 def nextTrack():
     global trackindex
     global nooftracks
@@ -356,23 +361,42 @@ def onoffline():
 
 def loadplaylists():
     global container
+    global BoolcontLoaded
+    BoolcontLoaded = False
     # Load playlist container
     print "In loadplaylists"
     container = session.playlist_container
     spotonstatus=session.connection.state	# Online or not? 1=offline, 2=online
 
-    #container.load
-    while not container.load:
-            pass
+    # Load playlist data
+    container.load
+    print "Container load: " + str(container.is_loaded)
+    while not container.is_loaded:
+            print "Wait..."
+	    sleep(100)
+    # Wait for container loaded event to fire
+    cont_loaded_event.wait()
+    #c=0
+    #while (BoolcontLoaded == False):
+	#session.process_events()
+
+	#print "Wait for containers..." + str(c)
+	#print str(BoolcontLoaded)
+	#c+=1
+
     print "Container loaded"
     print "You have " + str(len(container)) + " playlists."
+    if (len(container))==0:
+	    print "Error"
+	    sys.exit()
     v=0
     for items in container:
         left = str(items)[:14]
+	print left
         contItem = str(items).split(":")
         # Exclude Playlist folder entries
         if not left=="PlaylistFolder":
-            #print items
+            print items
             contUri = contItem[4].split("'")
             contUriuri = contUri[0]
             #print "Item uri:"  + str(v) + "----" + str(contUriuri)
@@ -565,6 +589,7 @@ if __name__ == '__main__':
     logged_in = threading.Event()
     logged_out = threading.Event()
     end_of_track = threading.Event()
+    cont_loaded_event = threading.Event()
 
     # Register event listeners
     session.on(spotify.SessionEvent.LOGGED_IN, on_logged_in)
@@ -572,7 +597,6 @@ if __name__ == '__main__':
     session.on(spotify.PlaylistContainerEvent.CONTAINER_LOADED, contLoaded)
     session.on(spotify.SessionEvent.OFFLINE_STATUS_UPDATED,offline_update)
     session.on(spotify.SessionEvent.CONNECTION_STATE_UPDATED, conn_state_change)
-
     # Create audio sink
     print "Check audio subsystem:"
     try:
