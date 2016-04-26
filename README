@@ -44,8 +44,6 @@ sudo python setup.py install
 -Edit settings.txt and add your Spotify credentials.
 -Run ('python autospot.py').
 
-
-
 Package built with instructions from https://packaging.python.org/en/latest/distributing.html#setup-for-project-distributors
 
 Some notes on operatingsystem for the Pi. I still have to find the best system, it should boot quick! Buildroot-rpi is doing that, 
@@ -53,10 +51,19 @@ but it's hard to build to support libspotify. Arch Linux boots in 13 seconds to 
 due to the system with dynamically loading extensions. 
 
 Arch Linux:
-pacman -S python2-pip gcc alsa-lib wget make
+pacman -S python2-pip gcc alsa-lib wget make tk
 pip2 install pyalsaaudio
 wget https://developer.spotify.com/download/libspotify/libspotify-12.1.103-Linux-armv6-bcm2708hardfp-release.tar.gz
 tar zxvf libspotify*
 cd libspotify*
 make install prefix=/usr/local
 pip2 install pyspotify
+Create symbolic link: ln -s /usr/bin/python2 /usr/bin/python
+Edit /etc/ld.so.conf, add "/usr/local/lib"
+Run ldconfig
+nano settings.py
+Add:
+username="YourUsername"
+password="YourPassword"
+Save
+
