@@ -512,6 +512,20 @@ if __name__ == '__main__':
     trackname="Trackname"
     offlinetxt=""
     curtrack=""
+    # Check where we are
+    path = os.getcwd()
+    #print path
+    # The current dir is Autospot?
+    curdirArr = path.split("/")
+    levels=len(curdirArr)
+    #print levels
+    curdir=curdirArr[levels-1]
+    #print curdir
+    if (curdir == "AutoSpot"):
+        print "ok"
+    else:
+        os.chdir("AutoSpot")
+   
 
     # Create Spotify session
     # Assuming a spotify_appkey.key in the current dir
