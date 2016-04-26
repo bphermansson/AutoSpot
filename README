@@ -55,8 +55,8 @@ due to the system with dynamically loading extensions.
 Arch Linux:
 pacman -S python2-pip gcc alsa-lib wget make
 pip2 install pyalsaaudio
-wget https://developer.spotify.com/download/libspotify/libspotify-12.1.51-Linux-i686-release.tar.gz
+wget https://developer.spotify.com/download/libspotify/libspotify-12.1.103-Linux-armv6-bcm2708hardfp-release.tar.gz
 tar zxvf libspotify*
 cd libspotify*
-sudo make install prefix=/usr/local
+make install prefix=/usr/local
 pip2 install pyspotify
