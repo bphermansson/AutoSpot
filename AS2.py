@@ -256,7 +256,7 @@ def loadPlaylist(getpluri, pl):
     global lblOffline
     print "In loadPlaylist"
     print "getpluri=" + getpluri
-    print "pl=" + pl
+    print "pl=" + str(pl)
     playlist = session.get_playlist(getpluri)
     plnameenc = unicodedata.normalize('NFKD', playlist.load().name).encode('ascii', 'ignore')
     print "Playlist name: " + plnameenc
@@ -287,7 +287,7 @@ def loadPlaylist(getpluri, pl):
     #print track
     trackname=track.load().name
     curtrack = unicodedata.normalize('NFKD', trackname).encode('ascii', 'ignore')
-    print "Playlist load, Track: " + curtrack + ", trackindex=" + trackindex
+    print "Playlist load, Track: " + curtrack + ", trackindex=" + str(trackindex)
     play(curtrackuri[1])
 
 def pldownload():
@@ -371,11 +371,9 @@ def loadplaylists():
     # Load playlist data
     container.load
     print "Container load: " + str(container.is_loaded)
-    while not container.is_loaded:
-            print "Wait..."
-	    sleep(100)
+
     # Wait for container loaded event to fire
-    cont_loaded_event.wait()
+    #cont_loaded_event.wait()
     #c=0
     #while (BoolcontLoaded == False):
 	#session.process_events()
@@ -392,11 +390,11 @@ def loadplaylists():
     v=0
     for items in container:
         left = str(items)[:14]
-	print left
+	#print left
         contItem = str(items).split(":")
         # Exclude Playlist folder entries
         if not left=="PlaylistFolder":
-            print items
+            #print items
             contUri = contItem[4].split("'")
             contUriuri = contUri[0]
             #print "Item uri:"  + str(v) + "----" + str(contUriuri)
