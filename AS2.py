@@ -21,7 +21,6 @@ import time
 import spotify
 from Tkinter import *
 
-
 # Keyboard input
 import tty, termios
 
