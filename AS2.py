@@ -547,7 +547,10 @@ if __name__ == '__main__':
         print "ok"
     else:
         os.chdir("AutoSpot")
-   
+        
+    # Which gui to use?
+    gui = settings.gui
+    print "Use gui: ".gui
 
     # Create Spotify session
     # Assuming a spotify_appkey.key in the current dir
