@@ -371,6 +371,7 @@ def loadplaylists():
     # Load playlist data
     container.load
     print "Container load: " + str(container.is_loaded)
+    print "We are " + str(spotonstatus)
 
     # Wait for container loaded event to fire
     #cont_loaded_event.wait()
@@ -387,13 +388,16 @@ def loadplaylists():
     if (len(container))==0:
 	    print "Error"
 	    sys.exit()
+    #print container
     v=0
     for items in container:
-        left = str(items)[:14]
+        
+        left = str(items)[:8]
 	#print left
         contItem = str(items).split(":")
         # Exclude Playlist folder entries
-        if not left=="PlaylistFolder":
+        if not left=="Playlist":
+            print "Item: " + str(items)
             #print items
             contUri = contItem[4].split("'")
             contUriuri = contUri[0]
@@ -415,23 +419,24 @@ def conn_state_change(session):
     #lblSpotonline["text"]="Conn state changed" - This doesnt work ,we get here before gui is set up
 
     print "Conn state changed: " + str(session.connection.state)
-    if (root):
-        #print "Window ok " + str(root)
-        #if (lblSpotonline):
-        spotonstatus=session.connection.state
-        if (spotonstatus==0):
-            onlinetext="Logged out"
-        elif (spotonstatus==1):
-            onlinetext="Online"
-        elif (spotonstatus==2):
-            onlinetext="Disconnected"
-        elif (spotonstatus==3):
-            onlinetext="Undefined"
-        elif (spotonstatus==4):
-            onlinetext="Offline"
-        else:
-            onlinetext="Error"
-        #lblSpotonline["text"]=onlinetext
+    if gui=="tk":
+        if (root):
+            #print "Window ok " + str(root)
+            #if (lblSpotonline):
+            spotonstatus=session.connection.state
+            if (spotonstatus==0):
+                onlinetext="Logged out"
+            elif (spotonstatus==1):
+                onlinetext="Online"
+            elif (spotonstatus==2):
+                onlinetext="Disconnected"
+            elif (spotonstatus==3):
+                onlinetext="Undefined"
+            elif (spotonstatus==4):
+                onlinetext="Offline"
+            else:
+                onlinetext="Error"
+            #lblSpotonline["text"]=onlinetext
     if session.connection.state is spotify.ConnectionState.LOGGED_IN:
         logged_in.set()
 
@@ -445,6 +450,7 @@ def cleanexit():
     print "Username: " + username
     print "Password: " + password
     print "Playlist:" + str(pl) + "(" + str(playlistnr) + "), track " + str(trackindex)
+    print "Gui type: " + str(gui)
     
     file = open("settings.py", "w")
     file.write("username=\"" + username+"\"\n")
@@ -452,6 +458,7 @@ def cleanexit():
     file.write("playlist=\"" + str(pl)+"\"\n")
     file.write("trackindex=\"" + str(trackindex)+"\"\n")
     file.write("playlistnr=\"" + str(playlistnr)+"\"\n")
+    file.write("guitype=\"" + str(gui)+"\"\n")
     file.close()
     
     print "Bye!"
@@ -549,8 +556,8 @@ if __name__ == '__main__':
         os.chdir("AutoSpot")
         
     # Which gui to use?
-    gui = settings.gui
-    print "Use gui: ".gui
+    gui = settings.guitype
+    print "Use gui: "+gui
 
     # Create Spotify session
     # Assuming a spotify_appkey.key in the current dir
@@ -560,12 +567,13 @@ if __name__ == '__main__':
     infotext = "6-Next tr 4-Prev tr 8-Next Pl 2-Prev pl 1-Download 5-Pause 3-On/Offline q-Quit"
     print infotext
 
-    # Gui, uses Tkinter
-    root = Tk()
-    root.minsize(width=320, height=240)
-    root.maxsize(width=320, height=240)
-    root.wm_title("Autospot")
-
+    if gui=="tk":
+        # Gui, uses Tkinter
+        root = Tk()
+        root.minsize(width=320, height=240)
+        root.maxsize(width=320, height=240)
+        root.wm_title("Autospot")
+    
     print "Welcome to Autospot"
    
     # Check for internet connection
@@ -688,38 +696,38 @@ if __name__ == '__main__':
     #getpluri is the current playlist
     loadPlaylist(getpluri, pl)
 
-    # Gui elements
+    if gui=="tk":
+        # Gui elements
+        lblInfo = Label(root,text=infotext,fg='White',bg='Grey',font=("Helvetica", 10), wraplength=300, justify=LEFT)
+        lblInfo.place(width=320, height=40)
+        lblInfo.pack(fill=X, side=TOP)
 
-    lblInfo = Label(root,text=infotext,fg='White',bg='Grey',font=("Helvetica", 10), wraplength=300, justify=LEFT)
-    lblInfo.place(width=320, height=40)
-    lblInfo.pack(fill=X, side=TOP)
+        lblSpotonline = Label(root,text="Spotonline",fg='Black',bg='White',font=("Verdana", 12))
+        lblSpotonline.pack(fill=X, side=TOP)
 
-    lblSpotonline = Label(root,text="Spotonline",fg='Black',bg='White',font=("Verdana", 12))
-    lblSpotonline.pack(fill=X, side=TOP)
+        status = Label(root,text="Status",fg='Black',bg='White',font=("Verdana", 16))
+        status.pack(fill=X, side=TOP)
 
-    status = Label(root,text="Status",fg='Black',bg='White',font=("Verdana", 16))
-    status.pack(fill=X, side=TOP)
+        lblArtist = Label(root,text="Artist",fg='Black',bg='White',font=("Verdana", 20))
+        lblArtist.pack(fill=X, side=TOP)
 
-    lblArtist = Label(root,text="Artist",fg='Black',bg='White',font=("Verdana", 20))
-    lblArtist.pack(fill=X, side=TOP)
+        lblTrack = Label(root,text="Track",fg='Black',bg='White',font=("Verdana", 14))
+        lblTrack.pack(fill=X, side=TOP)
 
-    lblTrack = Label(root,text="Track",fg='Black',bg='White',font=("Verdana", 14))
-    lblTrack.pack(fill=X, side=TOP)
+        lblOffline = Label(root,text="Offline status",fg='Black',bg='Yellow')
+        lblOffline.pack(fill=X, side=TOP)
 
-    lblOffline = Label(root,text="Offline status",fg='Black',bg='Yellow')
-    lblOffline.pack(fill=X, side=TOP)
+        # Keyboard input
+        root.bind('<Key>', keyinput)
+        # Update gui
+        root.after(1, updateGui)
 
-    # Keyboard input
-    root.bind('<Key>', keyinput)
-    # Update gui
-    root.after(1, updateGui)
+        # When window is closed
+        root.protocol("WM_DELETE_WINDOW", on_closing)
 
-    # When window is closed
-    root.protocol("WM_DELETE_WINDOW", on_closing)
-
-    #Start gui
-    # Main loop
-    root.mainloop()
+        #Start gui
+        # Main loop
+        root.mainloop()
 
 
     """
