@@ -19,7 +19,6 @@ import datetime
 import signal
 import time
 import spotify
-from Tkinter import *
 from time import sleep
 
 # Keyboard input
@@ -55,7 +54,8 @@ def internet_on():
 
 def on_logged_in(session, error_type):
     assert error_type == spotify.ErrorType.OK, 'Login failed'
-    print "In on_logged_in, Logged in"
+    if debug:
+	print "In on_logged_in, Logged in"
     logged_in.set()
     
 def on_end_of_track(session):
@@ -183,6 +183,8 @@ def play(curtrack):
     global artistname
     global trackname
     global trackofflinestatus, offlinetxt
+    global trackindex
+
 
     print "In play, curtrack=" + str(curtrack)
     #track = session.get_track(curtrack).load()
@@ -212,7 +214,6 @@ def play(curtrack):
     """artist = session.get_artist(
 ...     'spotify:artist:22xRIphSN7IkPVbErICu7s')
 >>> artist.load().name"""
-    global trackindex
     curtrack = unicodedata.normalize('NFKD', trackname).encode('ascii', 'ignore')
     curartist = unicodedata.normalize('NFKD', artistname).encode('ascii', 'ignore')
     trackname = curtrack # Global var for Gui
@@ -308,7 +309,8 @@ def offline_update(dummy):
     global trackofflinestatus
     global curtrack
     
-    print "Offline sync status updated"
+    if debug:
+	print "Offline sync status updated"
     
     """
      class spotify.offline.Offline(session)
@@ -417,8 +419,8 @@ def conn_state_change(session):
     global onlinetext
     global spotonstatus
     #lblSpotonline["text"]="Conn state changed" - This doesnt work ,we get here before gui is set up
-
-    print "Conn state changed: " + str(session.connection.state)
+    if debug:
+	print "Conn state changed: " + str(session.connection.state)
     if gui=="tk":
         if (root):
             #print "Window ok " + str(root)
@@ -446,12 +448,14 @@ def cleanexit():
     global trackindex
     global playlistnr
     global pl
-    print "In cleanexit, values to save:"
-    print "Username: " + username
-    print "Password: " + password
-    print "Playlist:" + str(pl) + "(" + str(playlistnr) + "), track " + str(trackindex)
-    print "Gui type: " + str(gui)
-    
+    if debug:
+	    print "In cleanexit, values to save:"
+	    print "Username: " + username
+	    print "Password: " + password
+	    print "Playlist:" + str(pl) + "(" + str(playlistnr) + "), track " + str(trackindex)
+	    print "Gui type: " + str(gui)
+	    print "Debug = " + str(debug)
+	    
     file = open("settings.py", "w")
     file.write("username=\"" + username+"\"\n")
     file.write("password=\"" + password+"\"\n")
@@ -459,6 +463,8 @@ def cleanexit():
     file.write("trackindex=\"" + str(trackindex)+"\"\n")
     file.write("playlistnr=\"" + str(playlistnr)+"\"\n")
     file.write("guitype=\"" + str(gui)+"\"\n")
+    file.write("debug=" + str(debug)+"\n")
+
     file.close()
     
     print "Bye!"
@@ -541,6 +547,8 @@ if __name__ == '__main__':
     trackname="Trackname"
     offlinetxt=""
     curtrack=""
+    
+    """
     # Check where we are
     path = os.getcwd()
     #print path
@@ -554,27 +562,41 @@ if __name__ == '__main__':
         print "ok"
     else:
         os.chdir("AutoSpot")
-        
+    """   
+    
+    print "Welcome to Autospot"
+    
+    # Debug mode?
+    debug = settings.debug
+    if debug:
+	print "Debug mode"
+    
     # Which gui to use?
     gui = settings.guitype
-    print "Use gui: "+gui
+    if debug:
+	print "Use gui: "+gui
 
     # Create Spotify session
     # Assuming a spotify_appkey.key in the current dir
     session = spotify.Session()
     spotonline=session.connection.state
 
-    infotext = "6-Next tr 4-Prev tr 8-Next Pl 2-Prev pl 1-Download 5-Pause 3-On/Offline q-Quit"
-    print infotext
 
     if gui=="tk":
         # Gui, uses Tkinter
-        root = Tk()
+	try:
+		from Tkinter import *
+        except:
+		print "Tkinter not available"
+		print "(sudo apt-get install python-tk)"
+		sys.exit()
+	root = Tk()
         root.minsize(width=320, height=240)
         root.maxsize(width=320, height=240)
         root.wm_title("Autospot")
-    
-    print "Welcome to Autospot"
+    elif gui=="text":
+	        infotext = "6-Next tr 4-Prev tr 8-Next Pl 2-Prev pl 1-Download 5-Pause 3-On/Offline q-Quit"
+	        print infotext    
    
     # Check for internet connection
     # Use libspotifys online-check instead
@@ -607,34 +629,40 @@ if __name__ == '__main__':
     session.on(spotify.SessionEvent.OFFLINE_STATUS_UPDATED,offline_update)
     session.on(spotify.SessionEvent.CONNECTION_STATE_UPDATED, conn_state_change)
     # Create audio sink
-    print "Check audio subsystem:"
+    if debug:
+	print "Check audio subsystem:"
     try:
         audio_driver = spotify.AlsaSink(session)
-        print "Audio ok"
+	if debug:
+		print "Audio ok"
     except ImportError:
         #logger.warning(
         #    'No audio sink found; audio playback unavailable.')
-        print "No audio sink found; audio playback unavailable."
+	print "No audio sink found; audio playback unavailable."
         sys.exit()
     try:
         pl = settings.playlist
         trackindex = settings.trackindex
         strPlaylistnr=settings.playlistnr
         playlistnr = int(strPlaylistnr)
-        print "We have a saved playlist"
-        print "Playlist" + str(pl) + ", (" + str(playlistnr) + "), track " + str(trackindex)
+        if debug:
+		print "We have a saved playlist"
+		print "Playlist" + str(pl) + ", (" + str(playlistnr) + "), track " + str(trackindex)
     except: 
-        print "Unexpected error:", sys.exc_info()[0]
-        print "No playlist saved!"
+        if debug:
+		print "Unexpected error:", sys.exc_info()[0]
+		print "No playlist saved!"
         pl=""
         trackindex=0
         playlistnr=0
     try:
         username = settings.username
         password = settings.password
-        print "User credentials from settings file: " + username + "-" + password
+        if debug:
+		print "User credentials from settings file: " + username + "-" + password
     except: 
-        print "No username or password given"
+        if debug:
+		print "No username or password given in settings.py, fix that!"
         sys.exit(0)
       
     # Login
@@ -642,7 +670,8 @@ if __name__ == '__main__':
     #logged_in.wait()
 
     remUser = session.remembered_user_name
-    print "Remembered user: " + str(remUser)
+    if debug:
+	print "Remembered user: " + str(remUser)
     if not remUser:
       print "Wait for login " + username 
       session.login(username, password, remember_me=True)
@@ -650,17 +679,19 @@ if __name__ == '__main__':
     else:
       session.relogin()	# Spotify remembers us, just relogin
       logged_in.wait()
-
-    print str(session.user_name) + " is logged in"
+    if gui=="text":
+	print str(session.user_name) + " is logged in"
     
     # Wait til we are online
     spotonstatus=session.connection.state
     while not (spotonstatus==1):	# '1' = logged in
       spotonstatus=session.connection.state
-      print spotonstatus
+      if debug:
+	print spotonstatus
       sleep(1)
 
-    print "Logged in, lets load playlists"
+    if debug:
+	print "Logged in, lets load playlists"
     """
     # Load playlist container
     container = session.playlist_container
@@ -683,15 +714,17 @@ if __name__ == '__main__':
         pluser = pl[2]
         pluri = pl[4].split("'")
         uri = pluri[0]
-        print "Uri:" + str(uri)
+        if gui=="text":
+		print "Uri:" + str(uri)
         #print pluser + pluri[0] # == phermansson5Lg5sAr6bKzEYCq8LbewLM
         # Should be like "'spotify:user:fiat500c:playlist:54k50VZdvtnIPt4d8RBCmZ'"
         getpluri = "spotify:user:" + pluser + ":playlist:" + pluri[0]
         #print getpluri
     else: 
         getpluri = "spotify:user:" + username + ":playlist:" + pl
-        print "Using saved playlist: " + getpluri + " (Saved: " + pl + ")"
-        print "Trackindex: " + str(trackindex)
+        if gui=="text":
+		print "Using saved playlist: " + getpluri + " (Saved: " + pl + ")"
+		print "Trackindex: " + str(trackindex)
     
     #getpluri is the current playlist
     loadPlaylist(getpluri, pl)
@@ -729,20 +762,32 @@ if __name__ == '__main__':
         # Main loop
         root.mainloop()
 
+    elif gui=="text":    
+	    # Infinite loop with keyboard input processing
+	    #     infotext = "6-Next tr 4-Prev tr 8-Next Pl 2-Prev pl 1-Download 5-Pause 3-On/Offline q-Quit"
 
-    """
-    # Infinite loop
-    while True:
-        char = getch()
-        print char
-        if(char == "6"):
-            nextTrack()
-        if(char == "4"):
-            prevTrack()
-        if(char == "8"):
-            changePl("next")
-        if(char == "2"):
-            changePl("prev")
-        if(char == "q"):           
-            cleanexit()
-"""
+	    while True:
+		char = getch()
+		print char
+		if(char == "6"):
+		    nextTrack()
+		if(char == "4"):
+		    prevTrack()
+		if(char == "8"):
+		    changePl("next")
+		if(char == "2"):
+		    changePl("prev")
+		if(char == "q"): 
+		    # Quit
+		    cleanexit()
+		if(char == "1"):
+		    # Download pl
+		    pldownload()	
+		if(char == "3"):
+		    # Change online/offline mode
+		    onoffline()
+		if(char == "5"):           
+		    # Pause player 
+		    playerPause()
+		
+
