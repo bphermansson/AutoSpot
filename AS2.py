@@ -305,7 +305,6 @@ def pldownload():
 
 def offline_update(dummy):
     # Called when offline sync status is updated.
-    
     global trackofflinestatus
     global curtrack
     
@@ -323,8 +322,9 @@ def offline_update(dummy):
     """
     if (curtrack):
       track = session.get_track(curtrack)
-      tos = track.offline_status
-      print "Tos:" + str(tos)
+      if debug:
+	tos = track.offline_status
+	print "Track offline status:" + str(tos)
     
     #trackofflinestatus=session.Track.offline_status
     
@@ -342,8 +342,10 @@ def offline_update(dummy):
         offlinetxt = "Waiting for download\n"
 
     # Print and update gui
-    print str(offlinestatus) + ":" + offlinetxt
-    lblOffline["text"]= offlinetxt
+    if debug:
+	print "Offline status" + str(offlinestatus) + ":" + offlinetxt
+    if gui=="tk":
+	lblOffline["text"]= offlinetxt
 
 def onoffline():
     print "In onoffline"
