@@ -177,18 +177,18 @@ def changePl(dir):
     # Debug: Jump to end of track to see end of track callback
     #session.player.seek(dur-100)
 
-def play(curtrack):
+def play():
     global trackindex
     #global inttrack
     global artistname
     global trackname
     global trackofflinestatus, offlinetxt
     global trackindex
-
-
-    print "In play, curtrack=" + str(curtrack)
+    global trackuri
+    
+    print "In play, trackuri=" + str(trackuri)
     #track = session.get_track(curtrack).load()
-    track = session.get_track(curtrack)
+    track = session.get_track(trackuri)
     
     #print track
     trackname=track.load().name
@@ -255,12 +255,16 @@ def loadPlaylist(getpluri, pl):
     global trackindex
     global playlist
     global lblOffline
-    print "In loadPlaylist"
-    print "getpluri=" + getpluri
-    print "pl=" + str(pl)
+    global curtrack
+    
+    if debug:
+      print "In loadPlaylist"
+      print "getpluri=" + getpluri
+      print "pl=" + str(pl)
     playlist = session.get_playlist(getpluri)
     plnameenc = unicodedata.normalize('NFKD', playlist.load().name).encode('ascii', 'ignore')
-    print "Playlist name: " + plnameenc
+    if debug:
+      print "Playlist name: " + plnameenc
 
     # Offline status
     offlinestatus = playlist.offline_status
@@ -275,14 +279,27 @@ def loadPlaylist(getpluri, pl):
         offlinetxt = "Waiting for download\n"
     #lblOffline["text"]= offlinetxt
 
+    if debug:
+      print "Offline? : " + str(offlinetxt)
+
     nooftracks = len(playlist.tracks)
     playlisturis=[]
+    if debug:
+      print "Tracks in current playlist:"
     for x in range(0, nooftracks):
         curtrack = str(playlist.tracks[x])
         curtrackuri = curtrack.split("'")
         playlisturis.append(curtrackuri[1])
+        
+        if debug:
+	  print curtrackuri[1]
     #print playlisturis[1]
+    
+    """
     inttrack = int(trackindex)
+    if debug: 
+      print "Trackindex: " + str(inttrack) 
+    
     track = session.get_track( playlisturis[inttrack]).load()
     #trackindex=0
     #print track
@@ -290,7 +307,7 @@ def loadPlaylist(getpluri, pl):
     curtrack = unicodedata.normalize('NFKD', trackname).encode('ascii', 'ignore')
     print "Playlist load, Track: " + curtrack + ", trackindex=" + str(trackindex)
     play(curtrackuri[1])
-
+    """
 def pldownload():
     global pl
     global playlist
@@ -303,14 +320,16 @@ def pldownload():
     else:
         playlist.set_offline_mode(offline=False)
 
-def offline_update(dummy):
+def offline_update(session):
     # Called when offline sync status is updated.
     global trackofflinestatus
     global curtrack
+    global debug
+    global trackuri
     
     if debug:
-	print "Offline sync status updated"
-    
+	print "In offline_update, Offline sync status updated"
+	    
     """
      class spotify.offline.Offline(session)
         tracks_to_sync
@@ -320,32 +339,31 @@ def offline_update(dummy):
 	 offline_status
      -> tos = session.Track.offline_status
     """
-    if (curtrack):
-      track = session.get_track(curtrack)
+    
+    if (trackuri):
+      print "trackuri given"
+      track = session.get_track(trackuri)
       if debug:
 	tos = track.offline_status
 	print "Track offline status:" + str(tos)
     
-    #trackofflinestatus=session.Track.offline_status
-    
-    print "Offline status updated"
-    #offlinestatus = playlist.offline_status
-    offlinestatus=trackofflinestatus
-    offlinetxt=""
-    if offlinestatus == 0:
-	    offlinetxt="Not available offline"
-    if offlinestatus == 1:
-	    offlinetxt = "Available offline"
-    if offlinestatus == 2:
-	    offlinetxt = "Download in progress"
-    if offlinestatus == 3:
-        offlinetxt = "Waiting for download\n"
+	#offlinestatus = playlist.offline_status
+	offlinestatus=trackofflinestatus
+	offlinetxt=""
+	if offlinestatus == 0:
+		offlinetxt="Not available offline"
+	if offlinestatus == 1:
+		offlinetxt = "Available offline"
+	if offlinestatus == 2:
+		offlinetxt = "Download in progress"
+	if offlinestatus == 3:
+	    offlinetxt = "Waiting for download\n"
 
-    # Print and update gui
-    if debug:
-	print "Offline status" + str(offlinestatus) + ":" + offlinetxt
-    if gui=="tk":
-	lblOffline["text"]= offlinetxt
+	# Print and update gui
+	if debug:
+	    print "Offline status" + str(offlinestatus) + ":" + offlinetxt
+	if gui=="tk":
+	    lblOffline["text"]= offlinetxt
 
 def onoffline():
     print "In onoffline"
@@ -359,23 +377,25 @@ def onoffline():
     #print "Conn state: " + str(session.connection.state)
     #session.connection._allow_network = False
     #print "New conn state: " + str(session.connection.state)
-    print "Allow network= " + str(session.connection.allow_network)
-    print session.connection.state
-    #session.connection_state=4
-
+    if debug:
+      print "Allow network= " + str(session.connection.allow_network)
+      print session.connection.state
+      
 def loadplaylists():
     global container
     global BoolcontLoaded
     BoolcontLoaded = False
     # Load playlist container
-    print "In loadplaylists"
+    if debug:
+      print "In loadplaylists"
     container = session.playlist_container
     spotonstatus=session.connection.state	# Online or not? 1=offline, 2=online
 
     # Load playlist data
     container.load
-    print "Container load: " + str(container.is_loaded)
-    print "We are " + str(spotonstatus)
+    if debug:
+      print "Container load: " + str(container.is_loaded)
+      print "We are " + str(spotonstatus)
 
     # Wait for container loaded event to fire
     #cont_loaded_event.wait()
@@ -420,27 +440,22 @@ def conn_state_change(session):
     global lblSpotonline
     global onlinetext
     global spotonstatus
-    #lblSpotonline["text"]="Conn state changed" - This doesnt work ,we get here before gui is set up
+    
+    spotonstatus=session.connection.state
+    if (spotonstatus==0):
+      onlinetext="Logged out"
+    elif (spotonstatus==1):
+      onlinetext="Online"
+    elif (spotonstatus==2):
+      onlinetext="Disconnected"
+    elif (spotonstatus==3):
+      onlinetext="Undefined"
+    elif (spotonstatus==4):
+      onlinetext="Offline"
+    else:
+      onlinetext="Error"
     if debug:
-	print "Conn state changed: " + str(session.connection.state)
-    if gui=="tk":
-        if (root):
-            #print "Window ok " + str(root)
-            #if (lblSpotonline):
-            spotonstatus=session.connection.state
-            if (spotonstatus==0):
-                onlinetext="Logged out"
-            elif (spotonstatus==1):
-                onlinetext="Online"
-            elif (spotonstatus==2):
-                onlinetext="Disconnected"
-            elif (spotonstatus==3):
-                onlinetext="Undefined"
-            elif (spotonstatus==4):
-                onlinetext="Offline"
-            else:
-                onlinetext="Error"
-            #lblSpotonline["text"]=onlinetext
+	print "Conn state changed, we are " + onlinetext
     if session.connection.state is spotify.ConnectionState.LOGGED_IN:
         logged_in.set()
 
@@ -450,11 +465,13 @@ def cleanexit():
     global trackindex
     global playlistnr
     global pl
+    global curtrack
     if debug:
 	    print "In cleanexit, values to save:"
 	    print "Username: " + username
 	    print "Password: " + password
 	    print "Playlist:" + str(pl) + "(" + str(playlistnr) + "), track " + str(trackindex)
+	    print "Current track: " + str(curtrack)
 	    print "Gui type: " + str(gui)
 	    print "Debug = " + str(debug)
 	    
@@ -543,7 +560,7 @@ if __name__ == '__main__':
     #logging.basicConfig(level=logging.INFO)
     global playlistnr
     global pl, artistname, trackindex, trackname, session, offlinetxt, container
-    global lblSpotonline, curtrack
+    global lblSpotonline, curtrack, debug, trackuri
     artistname="Artist"
     trackindex=0
     trackname="Trackname"
@@ -582,7 +599,6 @@ if __name__ == '__main__':
     # Assuming a spotify_appkey.key in the current dir
     session = spotify.Session()
     spotonline=session.connection.state
-
 
     if gui=="tk":
         # Gui, uses Tkinter
@@ -642,21 +658,9 @@ if __name__ == '__main__':
         #    'No audio sink found; audio playback unavailable.')
 	print "No audio sink found; audio playback unavailable."
         sys.exit()
-    try:
-        pl = settings.playlist
-        trackindex = settings.trackindex
-        strPlaylistnr=settings.playlistnr
-        playlistnr = int(strPlaylistnr)
-        if debug:
-		print "We have a saved playlist"
-		print "Playlist" + str(pl) + ", (" + str(playlistnr) + "), track " + str(trackindex)
-    except: 
-        if debug:
-		print "Unexpected error:", sys.exc_info()[0]
-		print "No playlist saved!"
-        pl=""
-        trackindex=0
-        playlistnr=0
+        
+
+        
     try:
         username = settings.username
         password = settings.password
@@ -703,7 +707,31 @@ if __name__ == '__main__':
     print "Container loaded"
     print "You have " + str(len(container)) + " playlists."
     """
+    
+    # Load users playlists
     loadplaylists()
+    
+    if debug:
+      print "Playlists loaded"
+      print "Trackindex: " + str(trackindex)
+    
+    # Get saved playlist
+    try:
+        pl = settings.playlist
+        trackindex = settings.trackindex
+        strPlaylistnr=settings.playlistnr
+        playlistnr = int(strPlaylistnr)
+        if debug:
+		print "We have a saved playlist"
+		print "Playlist" + str(pl) + ", (" + str(playlistnr) + "), track " + str(trackindex)
+    except: 
+        if debug:
+		print "Unexpected error:", sys.exc_info()[0]
+		print "No playlist saved!"
+        pl=""
+        trackindex=0
+        playlistnr=0
+        # Find the first track in the first playlist
 
     # First playlist
     #print "Container:" + str(container[1]) # == Playlist(u'spotify:user:phermansson:playlist:2Zkhao8VTWPfVD1oeha5I4')
@@ -724,12 +752,20 @@ if __name__ == '__main__':
         #print getpluri
     else: 
         getpluri = "spotify:user:" + username + ":playlist:" + pl
-        if gui=="text":
+        if debug:
 		print "Using saved playlist: " + getpluri + " (Saved: " + pl + ")"
 		print "Trackindex: " + str(trackindex)
     
     #getpluri is the current playlist
+    if debug:
+      print "Load the saved or the first playlist"
     loadPlaylist(getpluri, pl)
+    
+    trackuri = playlisturis[int(trackindex)]
+    if debug:
+      print "Going to play " + str(trackuri) 
+    play()
+    
 
     if gui=="tk":
         # Gui elements
