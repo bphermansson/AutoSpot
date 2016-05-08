@@ -466,12 +466,13 @@ def cleanexit():
     global playlistnr
     global pl
     global curtrack
+    global trackuri
     if debug:
 	    print "In cleanexit, values to save:"
 	    print "Username: " + username
 	    print "Password: " + password
 	    print "Playlist:" + str(pl) + "(" + str(playlistnr) + "), track " + str(trackindex)
-	    print "Current track: " + str(curtrack)
+	    print "Current track: " + str(trackuri)
 	    print "Gui type: " + str(gui)
 	    print "Debug = " + str(debug)
 	    
@@ -480,6 +481,7 @@ def cleanexit():
     file.write("password=\"" + password+"\"\n")
     file.write("playlist=\"" + str(pl)+"\"\n")
     file.write("trackindex=\"" + str(trackindex)+"\"\n")
+    file.write("Current_track=\"" + str(trackuri)+"\"\n")
     file.write("playlistnr=\"" + str(playlistnr)+"\"\n")
     file.write("guitype=\"" + str(gui)+"\"\n")
     file.write("debug=" + str(debug)+"\n")
@@ -697,7 +699,15 @@ if __name__ == '__main__':
       sleep(1)
 
     if debug:
-	print "Logged in, lets load playlists"
+	print "Logged in"
+	
+	
+    # Get saved track
+    try: 
+      trackuri=settings.Current_track
+    except:
+      print "No track saved"
+      
     """
     # Load playlist container
     container = session.playlist_container
@@ -709,6 +719,8 @@ if __name__ == '__main__':
     """
     
     # Load users playlists
+    if debug:
+	print "Logged in"
     loadplaylists()
     
     if debug:
