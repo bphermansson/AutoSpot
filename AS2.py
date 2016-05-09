@@ -73,7 +73,10 @@ def nextTrack():
     global trackindex
     global nooftracks
     global playlisturis
-    print "In nextTrack: Pl has " + str(nooftracks) + " tracks. trackindex = " + str(trackindex)
+    global trackuri
+    if debug: 
+      print "In nextTrack: Pl has " + str(nooftracks) + " tracks. trackindex = " + str(trackindex)
+      print "trackuri: " + str(trackuri)
     inttrack = int(trackindex)
     intnooftracks = int(nooftracks)
     if(inttrack<intnooftracks-1):
@@ -82,8 +85,12 @@ def nextTrack():
         #print playlisturis
         #dur = track.load().duration
         #print str(dur/1000) + " sec"
+        # Set trackuri to next track in playlist
+        trackuri=playlisturis[inttrack]
+        if debug:
+	  print "Next track: " + str(trackuri)
         trackindex=str(inttrack)
-        play(playlisturis[inttrack])
+        play()
         #time.sleep(2)
         #print session.player.state
     
@@ -97,14 +104,19 @@ def prevTrack():
     global trackindex
     global nooftracks
     global inttrack
-    print "In prevTrack: Pl has " + str(nooftracks) + " tracks. trackindex = " + str(trackindex)
+    global trackuri
+    if debug:
+      print "In prevTrack: Pl has " + str(nooftracks) + " tracks. trackindex = " + str(trackindex)
     inttrack = int(trackindex)
     if(inttrack>=0):
 	inttrack -= 1
         print "trackindex: " + str(inttrack) + "/" + str(nooftracks) 
         #print playlisturis[trackindex]
+        trackuri=playlisturis[inttrack]
+        if debug:
+	  print "Prev track: " + str(trackuri)
         trackindex=str(inttrack)
-        play(playlisturis[int(trackindex)])
+        play()
     else:
         print "Start of playlist"
         
@@ -312,9 +324,11 @@ def pldownload():
     global pl
     global playlist
     print "In pldownload"
-    status["text"]= "Going to download pl"
-
-    print "Pl:" + str(pl)
+    if gui=="tk":
+      status["text"]= "Going to download pl"
+    elif debug:
+      print "Going to download pl"
+      print "Pl:" + str(pl)
     if playlist.offline_status == 0:
         playlist.set_offline_mode(offline=True)
     else:
@@ -328,7 +342,7 @@ def offline_update(session):
     global trackuri
     
     if debug:
-	print "In offline_update, Offline sync status updated"
+	print "In offline_update, Offline sync status updated\n"
 	    
     """
      class spotify.offline.Offline(session)
@@ -339,32 +353,34 @@ def offline_update(session):
 	 offline_status
      -> tos = session.Track.offline_status
     """
-    
-    if (trackuri):
-      print "trackuri given"
-      track = session.get_track(trackuri)
-      if debug:
-	tos = track.offline_status
-	print "Track offline status:" + str(tos)
-    
-	#offlinestatus = playlist.offline_status
-	offlinestatus=trackofflinestatus
-	offlinetxt=""
-	if offlinestatus == 0:
-		offlinetxt="Not available offline"
-	if offlinestatus == 1:
-		offlinetxt = "Available offline"
-	if offlinestatus == 2:
-		offlinetxt = "Download in progress"
-	if offlinestatus == 3:
-	    offlinetxt = "Waiting for download\n"
-
-	# Print and update gui
+    if 'trackuri' in globals():
+      if (trackuri):
+	print "trackuri given"
+	track = session.get_track(trackuri)
 	if debug:
-	    print "Offline status" + str(offlinestatus) + ":" + offlinetxt
-	if gui=="tk":
-	    lblOffline["text"]= offlinetxt
+	  tos = track.offline_status
+	  print "Track offline status:" + str(tos)
+      
+	  #offlinestatus = playlist.offline_status
+	  offlinestatus=trackofflinestatus
+	  offlinetxt=""
+	  if offlinestatus == 0:
+		  offlinetxt="Not available offline"
+	  if offlinestatus == 1:
+		  offlinetxt = "Available offline"
+	  if offlinestatus == 2:
+		  offlinetxt = "Download in progress"
+	  if offlinestatus == 3:
+	      offlinetxt = "Waiting for download\n"
 
+	  # Print and update gui
+	  if debug:
+	      print "Offline status" + str(offlinestatus) + ":" + offlinetxt
+	  if gui=="tk":
+	      lblOffline["text"]= offlinetxt
+      else:
+	if debug:
+	  print "Trackuri not defined yet"
 def onoffline():
     print "In onoffline"
     #spotify.connection.Connection._allow_network=False
@@ -434,7 +450,6 @@ def loadplaylists():
                 print localuri[1]
 
             v+=1
-
 
 def conn_state_change(session):
     global lblSpotonline
