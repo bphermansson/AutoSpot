@@ -135,13 +135,16 @@ def changePl(dir):
         playlistnr-=1
     else:
         print "Playlist change error"
-    print "Playlist # " +str(playlistnr)
+    if debug:
+      print "Playlist # " +str(playlistnr)
     pl = str(container[playlistnr]).split(":")
-    print "New pl = " + str(pl)
+    if debug:
+      print "New pl = " + str(pl)
     pluser = pl[2]
     pluri = pl[4].split("'")
     pl = pluri[0]
-    print "New pl (short)= " + str(pl)
+    if debug:
+      print "New pl (short)= " + str(pl)
 
     #print pluser + pluri[0] # == phermansson5Lg5sAr6bKzEYCq8LbewLM
     # Should be like "'spotify:user:fiat500c:playlist:54k50VZdvtnIPt4d8RBCmZ'"
@@ -177,8 +180,11 @@ def changePl(dir):
         offline_status="Available offline"
     else:
         offline_status="Not available offline"
-    lblOffline["text"]=offline_status
-
+    if gui=="tk"
+      lblOffline["text"]=offline_status
+    else:
+      if debug:
+	print offline_status
     play(playlisturis[1])
 
     #session.player.load(track)
@@ -343,7 +349,7 @@ def offline_update(session):
     
     if debug:
 	print "In offline_update, Offline sync status updated\n"
-	    
+	print "Tracks left to download: " + str(session.offline.tracks_to_sync)
     """
      class spotify.offline.Offline(session)
         tracks_to_sync
