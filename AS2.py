@@ -127,6 +127,7 @@ def changePl(dir):
     global nooftracks
     global playlisturis
     global pl
+    global trackuri
     trackindex = 0
     # Next or previous playlist?
     if(dir=="next"):
@@ -180,12 +181,15 @@ def changePl(dir):
         offline_status="Available offline"
     else:
         offline_status="Not available offline"
-    if gui=="tk"
+    if gui=="tk":
       lblOffline["text"]=offline_status
     else:
       if debug:
 	print offline_status
-    play(playlisturis[1])
+    
+    # Set track variable and play the track
+    trackuri = playlisturis[1]
+    play()
 
     #session.player.load(track)
     #session.player.play()
@@ -299,6 +303,7 @@ def loadPlaylist(getpluri, pl):
 
     if debug:
       print "Offline? : " + str(offlinetxt)
+      print "Download completed: " + str(playlist.offline_download_completed)
 
     nooftracks = len(playlist.tracks)
     playlisturis=[]
@@ -337,9 +342,12 @@ def pldownload():
       print "Pl:" + str(pl)
     if playlist.offline_status == 0:
         playlist.set_offline_mode(offline=True)
+        if debug:
+	  print "offline=True"
     else:
         playlist.set_offline_mode(offline=False)
-
+	if debug:
+	  print "offline=False"
 def offline_update(session):
     # Called when offline sync status is updated.
     global trackofflinestatus
@@ -348,8 +356,8 @@ def offline_update(session):
     global trackuri
     
     if debug:
-	print "In offline_update, Offline sync status updated\n"
-	print "Tracks left to download: " + str(session.offline.tracks_to_sync)
+	print "In offline_update, Offline sync status updated"
+	print "Tracks left to download: " + str(session.offline.tracks_to_sync).rstrip()
     """
      class spotify.offline.Offline(session)
         tracks_to_sync
@@ -359,6 +367,7 @@ def offline_update(session):
 	 offline_status
      -> tos = session.Track.offline_status
     """
+    # Is trackuri defined as global?
     if 'trackuri' in globals():
       if (trackuri):
 	print "trackuri given"
@@ -437,17 +446,17 @@ def loadplaylists():
     #print container
     v=0
     for items in container:
-        
-        left = str(items)[:8]
+        left = str(items)[:14]
 	#print left
+	#print items
         contItem = str(items).split(":")
         # Exclude Playlist folder entries
-        if not left=="Playlist":
+        if not left=="PlaylistFolder":
             print "Item: " + str(items)
             #print items
             contUri = contItem[4].split("'")
             contUriuri = contUri[0]
-            #print "Item uri:"  + str(v) + "----" + str(contUriuri)
+            print "Item uri:"  + str(v) + "----" + str(contUriuri)
             localuri = str(items).split("'")
             playlist = session.get_playlist(localuri[1])
             #print str(playlist) + "---" + str(playlist.offline_status)
