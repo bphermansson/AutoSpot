@@ -5,3 +5,6 @@ trackindex=""
 playlistnr=""
 # Gui can be "tk" (graphical, normal X), "text" or "ILI9341" (graphical display)
 guitype="text"	
+# Debug, "True" or "False"
+debug=True
+
