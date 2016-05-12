@@ -121,7 +121,6 @@ def prevTrack():
         print "Start of playlist"
         
 def changePl(dir):
-    print dir
     global playlistnr
     global trackindex
     global nooftracks
@@ -129,6 +128,9 @@ def changePl(dir):
     global pl
     global trackuri
     trackindex = 0
+    
+    if debug:
+      print dir
     # Next or previous playlist?
     if(dir=="next"):
         playlistnr+=1
@@ -154,17 +156,28 @@ def changePl(dir):
     playlist = session.get_playlist(getpluri)
     #print playlist
     curpl = unicodedata.normalize('NFKD', playlist.load().name).encode('ascii', 'ignore')
-    print curpl
+    if debug:
+      print "curpl (real name): " + curpl
+    
+    # Load playlist:
+    if debug:
+      print "Load the playlist"
+    loadPlaylist(getpluri, pl)
     
     # Create a list with the playlists tracks
     nooftracks = len(playlist.tracks)
-    print str(nooftracks) + " tracks."
+    if debug:
+      print str(nooftracks) + " tracks."
     playlisturis=[]
     for x in range(0, nooftracks):
         curtrack = str(playlist.tracks[x])
         curtrackuri = curtrack.split("'")
         playlisturis.append(curtrackuri[1])
+    if debug:
+      print "Playlist array created"
     #print playlisturis[1]
+    
+    """
     track = session.get_track( playlisturis[1]).load()
     #trackindex=0
     #print track
@@ -188,6 +201,8 @@ def changePl(dir):
 	print offline_status
     
     # Set track variable and play the track
+    """
+    
     trackuri = playlisturis[1]
     play()
 
@@ -280,10 +295,14 @@ def loadPlaylist(getpluri, pl):
     global curtrack
     
     if debug:
-      print "In loadPlaylist"
+      print "---In loadPlaylist---"
       print "getpluri=" + getpluri
       print "pl=" + str(pl)
+    #playlist = session.get_playlist('spotify:user:fiat500c:playlist:54k50VZdvtnIPt4d8RBCmZ')
+    #getpluri=spotify:user:phermansson:playlist:55BhUdMcydRRoBMnmbJsiU
+    
     playlist = session.get_playlist(getpluri)
+    
     plnameenc = unicodedata.normalize('NFKD', playlist.load().name).encode('ascii', 'ignore')
     if debug:
       print "Playlist name: " + plnameenc
@@ -452,17 +471,17 @@ def loadplaylists():
         contItem = str(items).split(":")
         # Exclude Playlist folder entries
         if not left=="PlaylistFolder":
-            print "Item: " + str(items)
+            #print "Item: " + str(items)
             #print items
             contUri = contItem[4].split("'")
             contUriuri = contUri[0]
-            print "Item uri:"  + str(v) + "----" + str(contUriuri)
+            #print "Item uri:"  + str(v) + "----" + str(contUriuri)
             localuri = str(items).split("'")
             playlist = session.get_playlist(localuri[1])
             #print str(playlist) + "---" + str(playlist.offline_status)
             
             if not playlist.offline_status == 0:
-                print localuri[1]
+                print "localuri" + str(localuri[1])
 
             v+=1
 
@@ -750,7 +769,7 @@ if __name__ == '__main__':
     
     # Load users playlists
     if debug:
-	print "Logged in"
+	print "Load playlists"
     loadplaylists()
     
     if debug:
@@ -801,6 +820,7 @@ if __name__ == '__main__':
     #getpluri is the current playlist
     if debug:
       print "Load the saved or the first playlist"
+      print "getpluri, pl: " + str(getpluri) + " - " + str(pl)
     loadPlaylist(getpluri, pl)
     
     trackuri = playlisturis[int(trackindex)]
