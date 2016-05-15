@@ -154,6 +154,15 @@ def changePl(dir):
     getpluri = "spotify:user:" + pluser + ":playlist:" + pluri[0]
     #print getpluri
     playlist = session.get_playlist(getpluri)
+    if debug: 
+      offline = playlist.offline_status
+      print "Offline: " + str(offline)	# 0 = not available offline 1 = Available offline
+      print "spotonstatus: " + str(spotonstatus) # 1 = online 2 = offline
+      if offline == 0 and spotonstatus == 2:	# Playlist not downloaded and we are offline - This means trouble!
+	print "Cant play this. Not available offline"
+	
+	# DO SOMETHING ABOUT THIS SITUATION
+      
     #print playlist
     curpl = unicodedata.normalize('NFKD', playlist.load().name).encode('ascii', 'ignore')
     if debug:
@@ -204,6 +213,7 @@ def changePl(dir):
     """
     
     trackuri = playlisturis[1]
+    trackindex=1
     play()
 
     #session.player.load(track)
@@ -223,18 +233,11 @@ def play():
     global trackindex
     global trackuri
     
-    print "In play, trackuri=" + str(trackuri)
-    #track = session.get_track(curtrack).load()
+    if debug:
+      print "In play, trackuri=" + str(trackuri)
     track = session.get_track(trackuri)
-    
-    #print track
     trackname=track.load().name
-    
     dur = track.duration
-    
-    #    plnameenc = unicodedata.normalize('NFKD', playlist.load().name).encode('ascii', 'ignore')
-
-    #trackinfo = unicodedata.normalize('NFKD', trackname.encode('ascii', 'ignore'))
     trackinfo = trackname.encode('utf-8')
     print "Track:" + str(trackindex) + "-" + trackinfo + " length:" + str(dur)
 
@@ -261,12 +264,15 @@ def play():
     trackofflinestatus = track.offline_status
     if trackofflinestatus == 0:
         offlinetxt="Not available offline"
-    if trackofflinestatus == 1:
-        offlinetxt = "Available offline"
-    if trackofflinestatus == 2:
-	    offlinetxt = "Download in progress"
-    if trackofflinestatus == 3:
-        offlinetxt = "Waiting for download\n"
+    elif trackofflinestatus == 1:
+        offlinetxt = "Waiting for download"
+    elif trackofflinestatus == 2:
+	offlinetxt = "Download in progress"
+    elif trackofflinestatus == 3:
+        offlinetxt = "Downloaded\n"
+    else:
+	offlinetxt = "Download error\n"
+      
     print "Offline? " + str(trackofflinestatus) + " - " + offlinetxt
 
     session.player.play()
@@ -301,7 +307,14 @@ def loadPlaylist(getpluri, pl):
     #playlist = session.get_playlist('spotify:user:fiat500c:playlist:54k50VZdvtnIPt4d8RBCmZ')
     #getpluri=spotify:user:phermansson:playlist:55BhUdMcydRRoBMnmbJsiU
     
-    playlist = session.get_playlist(getpluri)
+    try:
+      playlist = session.get_playlist(getpluri)
+    except:
+      if debug:
+	print "Playlist load error"	# We couldnt load the playlist. Try the next one
+	changePl(next)
+    #playlist = session.get_playlist("spotify:user:phermansson:playlist:2goTnMEhmPyr3zyOYLNxJ1")
+    #playlist = session.get_playlist("spotify:user:phermansson:playlist:6GVBKiGSWKAwJlVxPGxD9h")
     
     plnameenc = unicodedata.normalize('NFKD', playlist.load().name).encode('ascii', 'ignore')
     if debug:
@@ -322,7 +335,7 @@ def loadPlaylist(getpluri, pl):
 
     if debug:
       print "Offline? : " + str(offlinetxt)
-      print "Download completed: " + str(playlist.offline_download_completed)
+      #print "Download completed: " + str(playlist.offline_download_completed)
 
     nooftracks = len(playlist.tracks)
     playlisturis=[]
@@ -376,7 +389,7 @@ def offline_update(session):
     
     if debug:
 	print "In offline_update, Offline sync status updated"
-	print "Tracks left to download: " + str(session.offline.tracks_to_sync).rstrip()
+	print "Tracks left to download: " + str(session.offline.tracks_to_sync).rstrip() + "\n"
     """
      class spotify.offline.Offline(session)
         tracks_to_sync
@@ -481,7 +494,7 @@ def loadplaylists():
             #print str(playlist) + "---" + str(playlist.offline_status)
             
             if not playlist.offline_status == 0:
-                print "localuri" + str(localuri[1])
+                print "localuri: " + str(localuri[1])
 
             v+=1
 
@@ -504,7 +517,7 @@ def conn_state_change(session):
     else:
       onlinetext="Error"
     if debug:
-	print "Conn state changed, we are " + onlinetext
+	print "Conn state changed, we are " + onlinetext + "\n"
     if session.connection.state is spotify.ConnectionState.LOGGED_IN:
         logged_in.set()
 
@@ -516,6 +529,7 @@ def cleanexit():
     global pl
     global curtrack
     global trackuri
+    global log
     if debug:
 	    print "In cleanexit, values to save:"
 	    print "Username: " + username
@@ -523,7 +537,8 @@ def cleanexit():
 	    print "Playlist:" + str(pl) + "(" + str(playlistnr) + "), track " + str(trackindex)
 	    print "Current track: " + str(trackuri)
 	    print "Gui type: " + str(gui)
-	    print "Debug = " + str(debug)
+	    print "Debug: " + str(debug)
+	    print "Log: " + str(log)
 	    
     file = open("settings.py", "w")
     file.write("username=\"" + username+"\"\n")
@@ -534,6 +549,7 @@ def cleanexit():
     file.write("playlistnr=\"" + str(playlistnr)+"\"\n")
     file.write("guitype=\"" + str(gui)+"\"\n")
     file.write("debug=" + str(debug)+"\n")
+    file.write("log=" + str(log)+"\n")
 
     file.close()
     
@@ -611,7 +627,7 @@ if __name__ == '__main__':
     #logging.basicConfig(level=logging.INFO)
     global playlistnr
     global pl, artistname, trackindex, trackname, session, offlinetxt, container
-    global lblSpotonline, curtrack, debug, trackuri
+    global lblSpotonline, curtrack, debug, log, trackuri
     artistname="Artist"
     trackindex=0
     trackname="Trackname"
