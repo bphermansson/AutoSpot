@@ -7,4 +7,5 @@ playlistnr=""
 guitype="text"	
 # Debug, "True" or "False"
 debug=True
+log=True
 
