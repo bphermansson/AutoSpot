@@ -638,8 +638,13 @@ if __name__ == '__main__':
     
     # Debug mode?
     debug = settings.debug
+    log = settings.log
     if debug:
 	print "Debug mode"
+    if log:
+      print "Log mode enabled"	# Used for debugging, gives more info
+      import logging
+      logging.basicConfig(level=logging.DEBUG)
     
     # Which gui to use?
     gui = settings.guitype
