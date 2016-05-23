@@ -684,10 +684,18 @@ if __name__ == '__main__':
         root.minsize(width=320, height=240)
         root.maxsize(width=320, height=240)
         root.wm_title("Autospot")
+        infotext = "6-Next tr 4-Prev tr 8-Next Pl 2-Prev pl 1-Download 5-Pause 3-On/Offline q-Quit"
     elif gui=="text":
 	        infotext = "6-Next tr 4-Prev tr 8-Next Pl 2-Prev pl 1-Download 5-Pause 3-On/Offline q-Quit"
 	        print infotext    
-   
+    elif gui=="ILI9341":
+	from PIL import Image
+	from PIL import ImageDraw
+	from PIL import ImageFont
+	import Adafruit_ILI9341 as TFT
+	import Adafruit_GPIO as GPIO
+	import Adafruit_GPIO.SPI as SPI
+	    
     # Check for internet connection
     # Use libspotifys online-check instead
     """
