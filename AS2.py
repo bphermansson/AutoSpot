@@ -695,7 +695,30 @@ if __name__ == '__main__':
 	import Adafruit_ILI9341 as TFT
 	import Adafruit_GPIO as GPIO
 	import Adafruit_GPIO.SPI as SPI
-	    
+	# Set up display
+	DC = 18
+	RST = 23
+	SPI_PORT = 0
+	SPI_DEVICE = 0
+	# Create TFT LCD display class.
+	disp = TFT.ILI9341(DC, rst=RST, spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE, max_speed_hz=64000000))
+
+	# Initialize display.
+	disp.begin()
+	disp.clear()
+	draw = ImageDraw.Draw(image)
+	position = (100,100)
+	font = ImageFont.truetype('VCR_OSD_MONO_1.001.ttf', 24)
+	width, height = draw.textsize("Welcome!", font=font)
+	textimage = Image.new('RGBA', (width, height), (0,0,0,0))
+	textdraw = ImageDraw.Draw(textimage)
+	textdraw.text((0,0), text, font=font, fill=(255,255,255))
+	rotated = textimage.rotate(270, expand=1)
+	image.paste(rotated, position, rotated)
+	disp.display()
+	
+	
+	
     # Check for internet connection
     # Use libspotifys online-check instead
     """
@@ -891,7 +914,7 @@ if __name__ == '__main__':
         # Main loop
         root.mainloop()
 
-    elif gui=="text":    
+    elif (gui=="text") or (gui=="ILI9341"):    
 	    # Infinite loop with keyboard input processing
 	    #     infotext = "6-Next tr 4-Prev tr 8-Next Pl 2-Prev pl 1-Download 5-Pause 3-On/Offline q-Quit"
 
