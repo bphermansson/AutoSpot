@@ -239,7 +239,8 @@ def play():
     trackname=track.load().name
     dur = track.duration
     trackinfo = trackname.encode('utf-8')
-    print "Track:" + str(trackindex) + "-" + trackinfo + " length:" + str(dur)
+    if debug:
+	print "Track:" + str(trackindex) + "-" + trackinfo + " length:" + str(dur)
 
     # Get artist code
     artist=track.load().artists
@@ -273,7 +274,8 @@ def play():
     else:
 	offlinetxt = "Download error\n"
       
-    print "Offline? " + str(trackofflinestatus) + " - " + offlinetxt
+    if debug:
+	print "Offline? " + str(trackofflinestatus) + " - " + offlinetxt
 
     session.player.play()
     #status["text"]= "Playing"
@@ -579,7 +581,7 @@ def keyinput(event):
 def updateGui():
     global artistname, onlinetext, offlinetxt, trackname
 
-    #print "In updateGui"
+    print "In updateGui"
 
     # Are there offline tracks to sync?
     #print "Sync status: " + str(session.offline.sync_status)
@@ -706,10 +708,12 @@ if __name__ == '__main__':
 	# Initialize display.
 	disp.begin()
 	disp.clear()
+	text="Welcome!"
+	image = disp.buffer
 	draw = ImageDraw.Draw(image)
 	position = (100,100)
 	font = ImageFont.truetype('VCR_OSD_MONO_1.001.ttf', 24)
-	width, height = draw.textsize("Welcome!", font=font)
+	width, height = draw.textsize(text, font=font)
 	textimage = Image.new('RGBA', (width, height), (0,0,0,0))
 	textdraw = ImageDraw.Draw(textimage)
 	textdraw.text((0,0), text, font=font, fill=(255,255,255))
@@ -793,10 +797,21 @@ if __name__ == '__main__':
     
     # Wait til we are online
     spotonstatus=session.connection.state
+    if spotonstatus == 0:
+	text="Logged out"
+    elif spotonstatus == 1:
+	text="Logged in"
+    elif spotonstatus == 2:
+	text="Disconnected"
+    elif spotonstatus == 3:
+	text="Undefined"
+    elif spotonstatus == 4:
+	text="Offline"
+			
     while not (spotonstatus==1):	# '1' = logged in
       spotonstatus=session.connection.state
       if debug:
-	print spotonstatus
+	print "onlinestatus: " + str(spotonstatus) + " - " + text
       sleep(1)
 
     if debug:
