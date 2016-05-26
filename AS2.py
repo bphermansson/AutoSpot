@@ -795,6 +795,9 @@ if __name__ == '__main__':
     if gui=="text":
 	print str(session.user_name) + " is logged in"
     
+    """ 'Wait til we are online'... What if we are not connected to the internet? 
+    Stupid function...
+    
     # Wait til we are online
     spotonstatus=session.connection.state
     if spotonstatus == 0:
@@ -816,7 +819,7 @@ if __name__ == '__main__':
 
     if debug:
 	print "Logged in"
-	
+"""	
 	
     # Get saved track
     try: 
