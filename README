@@ -63,3 +63,16 @@ username="YourUsername"
 password="YourPassword"
 Save
 Run 'A2.py'
+
+SPI & Gpio permissions on Rpi:
+groupadd spi
+groupadd gpio
+usermod -aG spi alarm
+usermod -aG gpio alarm
+nano /etc/udev/rules.d/raspberrypi.rules 
+SUBSYSTEM=="vchiq|input", MODE="0777"
+KERNEL=="mouse*|mice|event*",  MODE="0777"
+KERNEL=="spidev0.[0-9]*", GROUP="spi"
+KERNEL=="gpiomem", GROUP="gpio"
+
+reboot
