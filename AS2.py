@@ -301,11 +301,13 @@ def loadPlaylist(getpluri, pl):
     global playlist
     global lblOffline
     global curtrack
+    global spotonstatus
     
     if debug:
       print "---In loadPlaylist---"
       print "getpluri=" + getpluri
       print "pl=" + str(pl)
+      print "On/Offline status=" + str(spotonstatus)
     #playlist = session.get_playlist('spotify:user:fiat500c:playlist:54k50VZdvtnIPt4d8RBCmZ')
     #getpluri=spotify:user:phermansson:playlist:55BhUdMcydRRoBMnmbJsiU
     
@@ -339,6 +341,7 @@ def loadPlaylist(getpluri, pl):
     if debug:
       print "Offline? : " + str(offlinetxt)
       #print "Download completed: " + str(playlist.offline_download_completed)
+      
 
     nooftracks = len(playlist.tracks)
     playlisturis=[]
@@ -585,7 +588,7 @@ def keyinput(event):
 def updateGui():
     global artistname, onlinetext, offlinetxt, trackname
 
-    print "In updateGui"
+    #print "In updateGui"
 
     # Are there offline tracks to sync?
     #print "Sync status: " + str(session.offline.sync_status)
