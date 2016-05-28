@@ -321,6 +321,7 @@ def loadPlaylist(getpluri, pl):
     plnameenc = unicodedata.normalize('NFKD', playlist.load().name).encode('ascii', 'ignore')
     if debug:
       print "Playlist name: " + plnameenc
+      print "Check offline status" 
 
     # Offline status
     offlinestatus = playlist.offline_status
@@ -457,21 +458,24 @@ def loadplaylists():
     spotonstatus=session.connection.state	# Online or not? 1=offline, 2=online
 
     # Load playlist data
-    container.load
+    if debug:
+      print "Wait while playlists are loaded, might take a while."
+
+    container.load	# "Block until the playlist container?s data is loaded."
+    
     if debug:
       print "Container load: " + str(container.is_loaded)
-      print "We are " + str(spotonstatus)
+      #print "We are " + str(spotonstatus)
 
     # Wait for container loaded event to fire
-    #cont_loaded_event.wait()
-    #c=0
-    #while (BoolcontLoaded == False):
-	#session.process_events()
-
-	#print "Wait for containers..." + str(c)
-	#print str(BoolcontLoaded)
-	#c+=1
-
+    """cont_loaded_event.wait()
+    c=0
+    while (BoolcontLoaded == False):
+	session.process_events()
+	print "Wait for containers..." + str(c)
+	print str(BoolcontLoaded)
+	c+=1
+    """
     print "Container loaded"
     print "You have " + str(len(container)) + " playlists."
     if (len(container))==0:

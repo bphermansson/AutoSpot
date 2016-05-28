@@ -1,28 +1,21 @@
 AutoSpot
 =====
 
-A command-line Spotify-client based on Pyspotify2.
-We have two branches, one where the player is controlled by the computers 
-keyboard and one where the player is controlled by physical buttons.
+A Spotify-client based on Pyspotify2.
+It has three different guis: Text, graphical on computer screen and graphical with a small 2.2" TFT (Raspberry Pi only).
+Tested on Linux (Arch Linux, Ubuntu and Fedora) and on Raspberry Pi. 
+To use it you need some stuff installed first:
 
-It also use a LCD connected via I2C to diplay info.
-The setup for this is described at http://think-bowl.com/raspberry-pi/i2c-python-library-lcd-with-the-raspberry-pi/
-
-For some reason Raspberry:s Rpi.gpio (for working with the Gpio) doesn't
-work with Curses (which is used to enable keyboard control). 
-
-Dependencies:
 sudo apt-get install libffi-dev python-dev python-alsaaudio
 (sudo dnf install libffi-devel python-devel python-alsaaudio)
 
-sudo easy_install3 -U RPIO
+sudo easy_install3 -U RPIO - necessery?	
+
 sudo pip-3.2 install pyalsaaudio
 (sudo pip install pyalsaaudio)
 
-Behövs https://github.com/quick2wire/quick2wire-python-api? 
-
 Install libspotify:
-For 32-bit:
+For 32-bit systems:
 wget https://developer.spotify.com/download/libspotify/libspotify-12.1.51-Linux-i686-release.tar.gz
 Or for 64-bit:
 wget https://developer.spotify.com/download/libspotify/libspotify-12.1.51-Linux-x86_64-release.tar.gz
@@ -31,11 +24,14 @@ tar zxvf libspotify*
 cd libspotify*
 sudo make install prefix=/usr/local
 
--Get a Binary Spotify App key from https://devaccount.spotify.com/my-account/keys/
-and store it in the current directory.
-
 Install pyspotify
 sudo pip-3.2 install pyspotify
+or
+sudo pip install pyspotify
+
+-Get a Binary Spotify App key from https://devaccount.spotify.com/my-account/keys/
+and store it in the current directory. Download the Binary key and store it as "spotify_appkey.key". 
+
 
 Install Autospot:
 sudo python setup.py install
@@ -66,4 +62,4 @@ Add:
 username="YourUsername"
 password="YourPassword"
 Save
-
+Run 'A2.py'
