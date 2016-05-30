@@ -257,7 +257,7 @@ def play():
     artistname = artist.load().name
     """artist = session.get_artist(
 ...     'spotify:artist:22xRIphSN7IkPVbErICu7s')
->>> artist.load().name"""
+    artist.load().name"""
     curtrack = unicodedata.normalize('NFKD', trackname).encode('ascii', 'ignore')
     curartist = unicodedata.normalize('NFKD', artistname).encode('ascii', 'ignore')
     trackname = curtrack # Global var for Gui
@@ -308,7 +308,7 @@ def loadPlaylist(getpluri, pl):
     global lblOffline
     global curtrack
     global spotonstatus
-    
+    global errortext
     if debug:
       print "---In loadPlaylist---"
       print "getpluri=" + getpluri
@@ -346,6 +346,14 @@ def loadPlaylist(getpluri, pl):
 
     if debug:
       print "Offline? : " + str(offlinetxt)
+      if spotonstatus == 4 and offlinestatus == 0:
+	print "We are offline and this pl is NOT available offline. We are in trouble."
+	errortext="Cant play this, not available offline"
+	session.player.pause()
+	while(0):
+	  pass
+      else: 
+	errortext=""
       #print "Download completed: " + str(playlist.offline_download_completed)
       
 
@@ -390,10 +398,12 @@ def pldownload():
 	
     if gui=="tk":
       status["text"]= "Going to download pl"
+      lblError["text"] = errortext
     elif debug:
+      print "Errortext: " + str(errortext)
       print "Going to download pl"
       print "Pl:" + str(pl)
-    if playlist.offline_status == 0:
+    if playlist.offline_status == 0 and not spotonstatus == 4:
         playlist.set_offline_mode(offline=True)
         if debug:
 	  print "offline=True"
@@ -427,7 +437,9 @@ def offline_update(session):
     # Is trackuri defined as global?
     if 'trackuri' in globals():
       if (trackuri):
-	print "In offline update - trackuri given"
+
+	if debug:
+	  print "In offline update - trackuri given"
 	track = session.get_track(trackuri)
 	if debug:
 	  tos = track.offline_status
@@ -605,7 +617,7 @@ def keyinput(event):
         onoffline()
 
 def updateGui():
-    global artistname, onlinetext, offlinetxt, trackname
+    global artistname, onlinetext, offlinetxt, trackname, errortext
 
     #print "In updateGui"
 
@@ -641,6 +653,7 @@ def updateGui():
     lblTrack["text"]= str(ti).zfill(2) + "-" + trackname    # zfill adds a leading 0
     lblSpotonline["text"]=onlinetext
     lblOffline["text"]= offlinetxt + dltext
+    lblError["text"] = errortext
 
     ps=session.player.state
     status["text"]=ps
@@ -946,6 +959,9 @@ if __name__ == '__main__':
         lblOffline = Label(root,text="Offline status",fg='Black',bg='Yellow')
         lblOffline.pack(fill=X, side=TOP)
 
+        lblError = Label(root,text="No errors",fg='Black',bg='Yellow')
+        lblError.pack(fill=X, side=TOP)
+        
         # Keyboard input
         root.bind('<Key>', keyinput)
         # Update gui
