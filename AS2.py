@@ -232,9 +232,12 @@ def play():
     global trackofflinestatus, offlinetxt
     global trackindex
     global trackuri
+    global spotonstatus
     
     if debug:
       print "In play, trackuri=" + str(trackuri)
+      print "On/Offline status=" + str(spotonstatus)
+
     track = session.get_track(trackuri)
     trackname=track.load().name
     dur = track.duration
@@ -276,8 +279,11 @@ def play():
       
     if debug:
 	print "Offline? " + str(trackofflinestatus) + " - " + offlinetxt
-
-    session.player.play()
+    
+    # Can we play the track?
+    if spotonstatus == 1 or trackofflinestatus == 3: 	# We are online or track is downloaded
+	session.player.play()
+    
     #status["text"]= "Playing"
 
     # Debug: Jump to end of track to see end of track callback
@@ -372,7 +378,16 @@ def loadPlaylist(getpluri, pl):
 def pldownload():
     global pl
     global playlist
+    global spotonstatus
     print "In pldownload"
+    if spotonstatus <> 1:
+	# Not online, cant download
+	if gui=="tk":
+		status["text"]= "Offline, cant download"
+	elif debug:
+		print "Offline, cant download"
+	return
+	
     if gui=="tk":
       status["text"]= "Going to download pl"
     elif debug:
@@ -392,10 +407,14 @@ def offline_update(session):
     global curtrack
     global debug
     global trackuri
+    global spotonstatus
+    
+    # If we go offline while downloading, the app hangs..?.
     
     if debug:
 	print "In offline_update, Offline sync status updated"
 	print "Tracks left to download: " + str(session.offline.tracks_to_sync).rstrip() + "\n"
+	print "spotonstatus: " + str(spotonstatus)
     """
      class spotify.offline.Offline(session)
         tracks_to_sync
@@ -408,7 +427,7 @@ def offline_update(session):
     # Is trackuri defined as global?
     if 'trackuri' in globals():
       if (trackuri):
-	print "trackuri given"
+	print "In offline update - trackuri given"
 	track = session.get_track(trackuri)
 	if debug:
 	  tos = track.offline_status
