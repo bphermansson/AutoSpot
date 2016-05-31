@@ -97,7 +97,7 @@ def nextTrack():
         # Debug: Jump to end of track to see end of track callback
         #session.player.seek(dur-100)
     else:
-        print "End of playlist"
+        print "End of playlist, go to next pl"
         changePl("next")
         
 def prevTrack():
@@ -108,7 +108,7 @@ def prevTrack():
     if debug:
       print "In prevTrack: Pl has " + str(nooftracks) + " tracks. trackindex = " + str(trackindex)
     inttrack = int(trackindex)
-    if(inttrack>=0):
+    if(inttrack>0):
 	inttrack -= 1
         print "trackindex: " + str(inttrack) + "/" + str(nooftracks) 
         #print playlisturis[trackindex]
@@ -154,12 +154,12 @@ def changePl(dir):
     getpluri = "spotify:user:" + pluser + ":playlist:" + pluri[0]
     #print getpluri
     playlist = session.get_playlist(getpluri)
-    if debug: 
-      offline = playlist.offline_status
-      print "Offline: " + str(offline)	# 0 = not available offline 1 = Available offline
-      print "spotonstatus: " + str(spotonstatus) # 1 = online 2 = offline
-      if offline == 0 and spotonstatus == 2:	# Playlist not downloaded and we are offline - This means trouble!
-	print "Cant play this. Not available offline"
+    offline = playlist.offline_status
+    if debug:     
+	print "Offline: " + str(offline)	# 0 = not available offline 1 = Available offline
+	print "spotonstatus: " + str(spotonstatus) # 1 = online 2 = offline
+	if offline == 0 and spotonstatus == 2:	# Playlist not downloaded and we are offline - This means trouble!
+		print "Cant play this. Not available offline"
 	
 	# DO SOMETHING ABOUT THIS SITUATION
       
@@ -212,8 +212,8 @@ def changePl(dir):
     # Set track variable and play the track
     """
     
-    trackuri = playlisturis[1]
-    trackindex=1
+    trackuri = playlisturis[0]
+    trackindex=0
     play()
 
     #session.player.load(track)
@@ -283,6 +283,9 @@ def play():
     # Can we play the track?
     if spotonstatus == 1 or trackofflinestatus == 3: 	# We are online or track is downloaded
 	session.player.play()
+    else:
+	    if debug:
+		    print "Track not available!"
     
     #status["text"]= "Playing"
 
@@ -434,6 +437,9 @@ def offline_update(session):
 	 offline_status
      -> tos = session.Track.offline_status
     """
+    
+    trackofflinestatus = track.offline_status
+    
     # Is trackuri defined as global?
     if 'trackuri' in globals():
       if (trackuri):
