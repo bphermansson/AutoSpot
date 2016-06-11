@@ -666,6 +666,20 @@ def updateGui():
     # Update Gui every second
     root.after(1000, updateGui)
 
+def draw_rotated_text(image, text, position, angle, font, fill=(255,255,255)):
+	# Get rendered font width and height.
+	draw = ImageDraw.Draw(image)
+	width, height = draw.textsize(text, font=font)
+	# Create a new image with transparent background to store the text.
+	textimage = Image.new('RGBA', (width, height), (0,0,0,0))
+	# Render the text.
+	textdraw = ImageDraw.Draw(textimage)
+	textdraw.text((0,0), text, font=font, fill=fill)
+	# Rotate the text image.
+	rotated = textimage.rotate(angle, expand=1)
+	# Paste the text into the image, using it as a mask for transparency.
+	image.paste(rotated, position, rotated)
+
 def on_closing():
     cleanexit()
     root.destroy()
@@ -764,9 +778,18 @@ if __name__ == '__main__':
 	textdraw.text((0,0), text, font=font, fill=(255,255,255))
 	rotated = textimage.rotate(270, expand=1)
 	image.paste(rotated, position, rotated)
+	
+	disp.clear()
+	# Display is 240x320 px
+	draw_rotated_text(disp.buffer, 'Hello!', (150, 120), 90, font, fill=(255,255,255))
+	
+	# Prints a text to the lower right
+	draw_rotated_text(disp.buffer, 'Autospot 1.0', (200, 12), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, 'Upper left?(0,0)', (0, 0), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, '(10,200)', (10, 200), 90, font, fill=(255,0,0))	
+
+	
 	disp.display()
-	
-	
 	
     # Check for internet connection
     # Use libspotifys online-check instead
