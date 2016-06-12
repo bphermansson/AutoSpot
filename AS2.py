@@ -288,17 +288,19 @@ def play():
 		    print "Track not available!"
     
     #status["text"]= "Playing"
+    updateGui()
 
     # Debug: Jump to end of track to see end of track callback
     #session.player.seek(dur-100)
 
 def playerPause():
-    status["text"]="Play/Pause"
+    #status["text"]="Play/Pause"
     ps=session.player.state
     if (ps=="paused"):
         session.player.play()
     else:
         session.player.pause()
+    updateGui()
     
 def loadPlaylist(getpluri, pl):
     # Create a list with the playlists tracks
@@ -312,6 +314,7 @@ def loadPlaylist(getpluri, pl):
     global curtrack
     global spotonstatus
     global errortext
+    global plnameenc
     if debug:
       print "---In loadPlaylist---"
       print "getpluri=" + getpluri
@@ -623,7 +626,7 @@ def keyinput(event):
         onoffline()
 
 def updateGui():
-    global artistname, onlinetext, offlinetxt, trackname, errortext
+    global artistname, onlinetext, offlinetxt, trackname, errortext, plnameenc
 
     #print "In updateGui"
 
@@ -639,10 +642,12 @@ def updateGui():
     if tts>0:
         dltext=" " + str(tts) + " left"
         print str(dltext)
-        lblOffline["bg"]='Red'
+	if gui=="tk":
+		lblOffline["bg"]='Red'
     else:
         dltext=""
-	lblOffline["bg"]='Yellow'
+	if gui=="tk":
+		lblOffline["bg"]='Yellow'
     #sync_in_progress = session.offline.sync_status
     #print sync_in_progress
 
@@ -654,17 +659,31 @@ def updateGui():
     #ti=int(trackindex)+1	# For correct display. Trackindex starts at 0 but we want it displayed as track # 1
     ti=int(trackindex)
     ti+=1
-
-    lblArtist["text"]= artistname
-    lblTrack["text"]= str(ti).zfill(2) + "-" + trackname    # zfill adds a leading 0
-    lblSpotonline["text"]=onlinetext
-    lblOffline["text"]= offlinetxt + dltext
-    lblError["text"] = errortext
-
     ps=session.player.state
-    status["text"]=ps
-    # Update Gui every second
-    root.after(1000, updateGui)
+	
+    if gui=="tk":
+	lblArtist["text"]= artistname
+	lblTrack["text"]= str(ti).zfill(2) + "-" + trackname    # zfill adds a leading 0
+	lblSpotonline["text"]=onlinetext
+	lblOffline["text"]= offlinetxt + dltext
+	lblError["text"] = errortext
+	status["text"]=ps
+	# Update Gui every second
+	root.after(1000, updateGui)
+    elif gui=="ILI9341":
+	if debug:
+		print "Update graphical display"
+		print "Artistname: " + str(artistname) +" @ " + str(posline1)
+		print "Playlistname: " + str(plnameenc)
+	disp.clear()
+	draw_rotated_text(disp.buffer, artistname, (posline1), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, plnameenc, (posline2), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, trackname, (posline3), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, ps, (posline4), 90, font, fill=(255,0,0))	
+
+	# Update display
+	disp.display()
+
 
 def draw_rotated_text(image, text, position, angle, font, fill=(255,255,255)):
 	# Get rendered font width and height.
@@ -756,6 +775,10 @@ if __name__ == '__main__':
 	import Adafruit_ILI9341 as TFT
 	import Adafruit_GPIO as GPIO
 	import Adafruit_GPIO.SPI as SPI
+	
+	if debug:
+		print "Setting up graphical display"
+	
 	# Set up display
 	DC = 18
 	RST = 23
@@ -770,26 +793,40 @@ if __name__ == '__main__':
 	text="Welcome!"
 	image = disp.buffer
 	draw = ImageDraw.Draw(image)
-	position = (100,100)
+	#position = (100,100)
+	position = (0,0)
 	font = ImageFont.truetype('VCR_OSD_MONO_1.001.ttf', 24)
 	width, height = draw.textsize(text, font=font)
 	textimage = Image.new('RGBA', (width, height), (0,0,0,0))
 	textdraw = ImageDraw.Draw(textimage)
 	textdraw.text((0,0), text, font=font, fill=(255,255,255))
-	rotated = textimage.rotate(270, expand=1)
-	image.paste(rotated, position, rotated)
+	
+	#rotated = textimage.rotate(270, expand=1)
+	#image.paste(rotated, position, rotated)
+	image.paste(textimage, position, textimage)
 	
 	disp.clear()
 	# Display is 240x320 px
-	draw_rotated_text(disp.buffer, 'Hello!', (150, 120), 90, font, fill=(255,255,255))
+	#draw_rotated_text(disp.buffer, 'Hello!', (150, 120), 90, font, fill=(255,255,255))
 	
 	# Prints a text to the lower right
-	draw_rotated_text(disp.buffer, 'Autospot 1.0', (200, 12), 90, font, fill=(255,0,0))	
-	draw_rotated_text(disp.buffer, 'Upper left?(0,0)', (0, 0), 90, font, fill=(255,0,0))	
-	draw_rotated_text(disp.buffer, '(10,200)', (10, 200), 90, font, fill=(255,0,0))	
-
+	# disp.buffer, "<text>",  y (), x()
+	# 0,140 = upper left
 	
+	#draw_rotated_text(disp.buffer, 'Autospot 1.0', (0, 140), 90, font, fill=(255,0,0))	
+	#draw_rotated_text(disp.buffer, '2nd line', (25, 200), 90, font, fill=(255,0,0))	
+	#draw_rotated_text(disp.buffer, '3nd line', (50, 200), 90, font, fill=(255,0,0))	
+	#draw_rotated_text(disp.buffer, '4th line', (75, 200), 90, font, fill=(255,0,0))	
+	posline1=(0,0)
+	posline2=(25,0)
+	posline3=(50,0)
+	posline4=(75,0)
+	draw_rotated_text(disp.buffer, 'Autospot 1.0', (posline1), 90, font, fill=(255,0,0))	
+	#draw_rotated_text(disp.buffer, '(10,200)', (10, 200), 90, font, fill=(255,0,0))	
 	disp.display()
+	
+	if debug:
+		print "Done setting up graphical display"
 	
     # Check for internet connection
     # Use libspotifys online-check instead
