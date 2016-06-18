@@ -233,12 +233,17 @@ def play():
     global trackindex
     global trackuri
     global spotonstatus
-    
+    global albumname
     if debug:
       print "In play, trackuri=" + str(trackuri)
       print "On/Offline status=" + str(spotonstatus)
 
     track = session.get_track(trackuri)
+    
+    album = str(track.album).split("'")
+    albumname = session.get_album(album[1])
+    albumname = albumname.load().name
+
     trackname=track.load().name
     dur = track.duration
     trackinfo = trackname.encode('utf-8')
@@ -247,9 +252,11 @@ def play():
 
     # Get artist code
     artist=track.load().artists
+#    if debug: 
+#	    print "---In play, artistcode = " + str(artist)
     #print artist
     temp = str(artist).split(":")
-    #print temp
+    #print "temp: - " + str(temp)
     art = temp[2].split("'")
     #print art[0]
     artisturi="spotify:artist:" + art[0]
@@ -261,7 +268,10 @@ def play():
     curtrack = unicodedata.normalize('NFKD', trackname).encode('ascii', 'ignore')
     curartist = unicodedata.normalize('NFKD', artistname).encode('ascii', 'ignore')
     trackname = curtrack # Global var for Gui
-    print "Artist: " + curartist + "- Track: " + curtrack +"-"+ str(trackindex)
+    if debug:
+	print "Artist: " + curartist + "- Track: " + curtrack +"-"+ str(trackindex)
+	print "Album: " + albumname
+
     session.player.load(track)
 
     # Track available offline?
@@ -626,8 +636,8 @@ def keyinput(event):
         onoffline()
 
 def updateGui():
-    global artistname, onlinetext, offlinetxt, trackname, errortext, plnameenc
-
+    global artistname, onlinetext, offlinetxt, trackname, errortext, plnameenc, albumname, lblOffline
+    global lstatus
     #print "In updateGui"
 
     # Are there offline tracks to sync?
@@ -639,15 +649,18 @@ def updateGui():
     tts=session.offline.tracks_to_sync
     #print "Tracks to sync: " + str(tts)
     #print "No of offline pls: " + str(session.offline.num_playlists)
+    """
     if tts>0:
         dltext=" " + str(tts) + " left"
         print str(dltext)
 	if gui=="tk":
 		lblOffline["bg"]='Red'
+		
     else:
         dltext=""
 	if gui=="tk":
 		lblOffline["bg"]='Yellow'
+    """
     #sync_in_progress = session.offline.sync_status
     #print sync_in_progress
 
@@ -660,35 +673,50 @@ def updateGui():
     ti=int(trackindex)
     ti+=1
     ps=session.player.state
+    if debug:
+	print "Update graphical display"
+	print "Artistname: " + str(artistname) 
+	print "Playlistname: " + str(plnameenc)
+	print "Albumname: " + str(albumname)
 	
     if gui=="tk":
-	lblArtist["text"]= artistname
+	"""lblArtist["text"]= artistname
+	lblAlbum["text"]= albumname
 	lblTrack["text"]= str(ti).zfill(2) + "-" + trackname    # zfill adds a leading 0
 	lblSpotonline["text"]=onlinetext
 	lblOffline["text"]= offlinetxt + dltext
 	lblError["text"] = errortext
 	status["text"]=ps
+	"""
+	global lstatus
+	lstatus.set("Updategui")
+
 	# Update Gui every second
 	root.after(1000, updateGui)
     elif gui=="ILI9341":
-	if debug:
-		print "Update graphical display"
-		print "Artistname: " + str(artistname) +" @ " + str(posline1)
-		print "Playlistname: " + str(plnameenc)
 	disp.clear()
-	draw_rotated_text(disp.buffer, artistname, (posline1), 90, font, fill=(255,0,0))	
-	draw_rotated_text(disp.buffer, plnameenc, (posline2), 90, font, fill=(255,0,0))	
-	draw_rotated_text(disp.buffer, trackname, (posline3), 90, font, fill=(255,0,0))	
-	draw_rotated_text(disp.buffer, ps, (posline4), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, "Artist: " + artistname, (posline1), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, "Album: " + albumname, (posline2), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, "Track: " + trackname, (posline3), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, "PL: " + plnameenc, (posline4), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, "Status:" + ps, (posline5), 90, font, fill=(255,0,0))	
 
 	# Update display
 	disp.display()
 
 
 def draw_rotated_text(image, text, position, angle, font, fill=(255,255,255)):
+	# For graphical display
 	# Get rendered font width and height.
 	draw = ImageDraw.Draw(image)
 	width, height = draw.textsize(text, font=font)
+	#print "Width: " + str(width) # = text width
+	#print str(disp.width) # = real display width
+	#	half length of string = width / 2
+	
+	#print "pos0: " + str(position[0])
+	#print "pos1: " + str(position[1])
+	
 	# Create a new image with transparent background to store the text.
 	textimage = Image.new('RGBA', (width, height), (0,0,0,0))
 	# Render the text.
@@ -707,7 +735,9 @@ if __name__ == '__main__':
     #logging.basicConfig(level=logging.INFO)
     global playlistnr
     global pl, artistname, trackindex, trackname, session, offlinetxt, container
-    global lblSpotonline, curtrack, debug, log, trackuri
+    global lblSpotonline, lblOffline, curtrack, debug, log, trackuri
+    global lblArtist
+    global lstatus
     artistname="Artist"
     trackindex=0
     trackname="Trackname"
@@ -769,6 +799,7 @@ if __name__ == '__main__':
 	        infotext = "6-Next tr 4-Prev tr 8-Next Pl 2-Prev pl 1-Download 5-Pause 3-On/Offline q-Quit"
 	        print infotext    
     elif gui=="ILI9341":
+	# https://learn.adafruit.com/user-space-spi-tft-python-library-ili9341-2-8/usage
 	from PIL import Image
 	from PIL import ImageDraw
 	from PIL import ImageFont
@@ -795,7 +826,8 @@ if __name__ == '__main__':
 	draw = ImageDraw.Draw(image)
 	#position = (100,100)
 	position = (0,0)
-	font = ImageFont.truetype('VCR_OSD_MONO_1.001.ttf', 24)
+	#font = ImageFont.truetype('VCR_OSD_MONO_1.001.ttf', 24)
+	font = ImageFont.truetype('OstrichSans-Heavy.otf', 30)
 	width, height = draw.textsize(text, font=font)
 	textimage = Image.new('RGBA', (width, height), (0,0,0,0))
 	textdraw = ImageDraw.Draw(textimage)
@@ -817,10 +849,12 @@ if __name__ == '__main__':
 	#draw_rotated_text(disp.buffer, '2nd line', (25, 200), 90, font, fill=(255,0,0))	
 	#draw_rotated_text(disp.buffer, '3nd line', (50, 200), 90, font, fill=(255,0,0))	
 	#draw_rotated_text(disp.buffer, '4th line', (75, 200), 90, font, fill=(255,0,0))	
-	posline1=(0,0)
-	posline2=(25,0)
-	posline3=(50,0)
-	posline4=(75,0)
+	posline1=(0,3)	# Pos y,x, vertical/horizontal
+	posline2=(25,3)
+	posline3=(50,3)
+	posline4=(75,3)
+	posline5=(200,3)
+	
 	draw_rotated_text(disp.buffer, 'Autospot 1.0', (posline1), 90, font, fill=(255,0,0))	
 	#draw_rotated_text(disp.buffer, '(10,200)', (10, 200), 90, font, fill=(255,0,0))	
 	disp.display()
@@ -1006,28 +1040,47 @@ if __name__ == '__main__':
 
     if gui=="tk":
         # Gui elements
-        lblInfo = Label(root,text=infotext,fg='White',bg='Grey',font=("Helvetica", 10), wraplength=300, justify=LEFT)
+	
+	#label1 = Label(root, text="prompt", width=20)
+	#v = StringVar()
+	#Label(label1, textvariable=v).pack()
+	#v.set("New Text!")
+	linfo= StringVar()
+	lspotonline= StringVar()
+	lstatus= StringVar()
+	lartist= StringVar()
+	lalbum= StringVar()
+	ltrack= StringVar()
+	loffline= StringVar()
+	lerror= StringVar()
+	
+        lblInfo = Label(root,textvariable=linfo,fg='White',bg='Grey',font=("Helvetica", 10), wraplength=300, justify=LEFT)
         lblInfo.place(width=320, height=40)
         lblInfo.pack(fill=X, side=TOP)
 
-        lblSpotonline = Label(root,text="Spotonline",fg='Black',bg='White',font=("Verdana", 12))
+        lblSpotonline = Label(root,textvariable=lspotonline,fg='Black',bg='White',font=("Verdana", 12))
         lblSpotonline.pack(fill=X, side=TOP)
 
-        status = Label(root,text="Status",fg='Black',bg='White',font=("Verdana", 16))
-        status.pack(fill=X, side=TOP)
+        lblStatus = Label(root,textvariable=lstatus,fg='Black',bg='White',font=("Verdana", 16))
+        lblStatus.pack(fill=X, side=TOP)
 
-        lblArtist = Label(root,text="Artist",fg='Black',bg='White',font=("Verdana", 20))
+        lblArtist = Label(root,textvariable=lartist,fg='Black',bg='White',font=("Verdana", 20))
         lblArtist.pack(fill=X, side=TOP)
-
-        lblTrack = Label(root,text="Track",fg='Black',bg='White',font=("Verdana", 14))
+ 
+	lblAlbum = Label(root,textvariable=lalbum,fg='Black',bg='White',font=("Verdana", 20))
+        lblAlbum.pack(fill=X, side=TOP)
+	
+        lblTrack = Label(root,textvariable=ltrack,fg='Black',bg='White',font=("Verdana", 14))
         lblTrack.pack(fill=X, side=TOP)
 
-        lblOffline = Label(root,text="Offline status",fg='Black',bg='Yellow')
+        lblOffline = Label(root,textvariable=loffline,fg='Black',bg='Yellow')
         lblOffline.pack(fill=X, side=TOP)
 
-        lblError = Label(root,text="No errors",fg='Black',bg='Yellow')
+        lblError = Label(root,textvariable=lerror,fg='Black',bg='Yellow')
         lblError.pack(fill=X, side=TOP)
         
+	lstatus.set("Welcome")
+	
         # Keyboard input
         root.bind('<Key>', keyinput)
         # Update gui
