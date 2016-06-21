@@ -59,7 +59,7 @@ def on_logged_in(session, error_type):
     logged_in.set()
     
 def on_end_of_track(session):
-    print "Track ended"
+    print "Track ended\n"
     nextTrack()
 
 def contLoaded(session, error_type):
@@ -649,18 +649,18 @@ def updateGui():
     tts=session.offline.tracks_to_sync
     #print "Tracks to sync: " + str(tts)
     #print "No of offline pls: " + str(session.offline.num_playlists)
-    """
+    
     if tts>0:
         dltext=" " + str(tts) + " left"
-        print str(dltext)
-	if gui=="tk":
-		lblOffline["bg"]='Red'
+        #print str(dltext)
+	#if gui=="tk":
+	#	lblOffline["bg"]='Red'
 		
     else:
         dltext=""
-	if gui=="tk":
-		lblOffline["bg"]='Yellow'
-    """
+	#if gui=="tk":
+	#	lblOffline["bg"]='Yellow'
+    
     #sync_in_progress = session.offline.sync_status
     #print sync_in_progress
 
@@ -678,6 +678,10 @@ def updateGui():
 	print "Artistname: " + str(artistname) 
 	print "Playlistname: " + str(plnameenc)
 	print "Albumname: " + str(albumname)
+	print "Offline: " + str(offlinetxt + dltext)
+	print "Spotonline: " + str(onlinetext)
+	print "Error: " + str(errortext)
+
 	
     if gui=="tk":
 	"""lblArtist["text"]= artistname
@@ -699,8 +703,14 @@ def updateGui():
 	draw_rotated_text(disp.buffer, "Album: " + albumname, (posline2), 90, font, fill=(255,0,0))	
 	draw_rotated_text(disp.buffer, "Track: " + trackname, (posline3), 90, font, fill=(255,0,0))	
 	draw_rotated_text(disp.buffer, "PL: " + plnameenc, (posline4), 90, font, fill=(255,0,0))	
-	draw_rotated_text(disp.buffer, "Status:" + ps, (posline5), 90, font, fill=(255,0,0))	
-
+	draw_rotated_text(disp.buffer, onlinetext, (posline5), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, offlinetxt, (posline6), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, ps, (posline7), 90, font, fill=(255,0,0))	
+	
+	#
+	# Add line for off/online
+	#
+	
 	# Update display
 	disp.display()
 
@@ -713,9 +723,18 @@ def draw_rotated_text(image, text, position, angle, font, fill=(255,255,255)):
 	#print "Width: " + str(width) # = text width
 	#print str(disp.width) # = real display width
 	#	half length of string = width / 2
+		
+	# Adjust label positions so text starts at left border 
+	# Make a öost of the position tuple, change value, and make a new tuple
+	lst = list(position)
+	lst[1] = 320-width - 5
+	if lst[1]<0:
+		lst[1]=0
+	position = tuple(lst)
 	
-	#print "pos0: " + str(position[0])
-	#print "pos1: " + str(position[1])
+	"""print "pos0: " + str(position[0])
+	print "pos1: " + str(position[1])
+	print "Width: " + str(width)"""
 	
 	# Create a new image with transparent background to store the text.
 	textimage = Image.new('RGBA', (width, height), (0,0,0,0))
@@ -821,42 +840,18 @@ if __name__ == '__main__':
 	# Initialize display.
 	disp.begin()
 	disp.clear()
-	text="Welcome!"
 	image = disp.buffer
-	draw = ImageDraw.Draw(image)
-	#position = (100,100)
-	position = (0,0)
-	#font = ImageFont.truetype('VCR_OSD_MONO_1.001.ttf', 24)
 	font = ImageFont.truetype('OstrichSans-Heavy.otf', 30)
-	width, height = draw.textsize(text, font=font)
-	textimage = Image.new('RGBA', (width, height), (0,0,0,0))
-	textdraw = ImageDraw.Draw(textimage)
-	textdraw.text((0,0), text, font=font, fill=(255,255,255))
-	
-	#rotated = textimage.rotate(270, expand=1)
-	#image.paste(rotated, position, rotated)
-	image.paste(textimage, position, textimage)
-	
-	disp.clear()
-	# Display is 240x320 px
-	#draw_rotated_text(disp.buffer, 'Hello!', (150, 120), 90, font, fill=(255,255,255))
-	
-	# Prints a text to the lower right
-	# disp.buffer, "<text>",  y (), x()
-	# 0,140 = upper left
-	
-	#draw_rotated_text(disp.buffer, 'Autospot 1.0', (0, 140), 90, font, fill=(255,0,0))	
-	#draw_rotated_text(disp.buffer, '2nd line', (25, 200), 90, font, fill=(255,0,0))	
-	#draw_rotated_text(disp.buffer, '3nd line', (50, 200), 90, font, fill=(255,0,0))	
-	#draw_rotated_text(disp.buffer, '4th line', (75, 200), 90, font, fill=(255,0,0))	
-	posline1=(0,3)	# Pos y,x, vertical/horizontal
-	posline2=(25,3)
-	posline3=(50,3)
-	posline4=(75,3)
-	posline5=(200,3)
+
+	posline1=(10,3)	# Pos y,x, vertical/horizontal
+	posline2=(50,3)
+	posline3=(90,3)
+	posline4=(130,3)
+	posline5=(170,3)
+	posline6=(210,40)
+	posline7=(210,3)
 	
 	draw_rotated_text(disp.buffer, 'Autospot 1.0', (posline1), 90, font, fill=(255,0,0))	
-	#draw_rotated_text(disp.buffer, '(10,200)', (10, 200), 90, font, fill=(255,0,0))	
 	disp.display()
 	
 	if debug:
