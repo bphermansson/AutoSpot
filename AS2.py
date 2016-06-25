@@ -434,13 +434,16 @@ def offline_update(session):
     global debug
     global trackuri
     global spotonstatus
+    global offlinetext
     
     # If we go offline while downloading, the app hangs..?.
     
+    tts = str(session.offline.tracks_to_sync)
+    
     if debug:
-	print "In offline_update, Offline sync status updated"
-	print "Tracks left to download: " + str(session.offline.tracks_to_sync).rstrip() + "\n"
-	print "spotonstatus: " + str(spotonstatus)
+	print "In offline_update, Offline sync status updated\n"
+	print "Tracks left to download: " + str.rstrip(tts) + "\n"
+	print "spotonstatus: " + str(spotonstatus) + "\n"
     """
      class spotify.offline.Offline(session)
         tracks_to_sync
@@ -451,7 +454,7 @@ def offline_update(session):
      -> tos = session.Track.offline_status
     """
     
-    trackofflinestatus = track.offline_status
+    #trackofflinestatus = track.offline_status
     
     # Is trackuri defined as global?
     if 'trackuri' in globals():
@@ -460,12 +463,13 @@ def offline_update(session):
 	if debug:
 	  print "In offline update - trackuri given"
 	track = session.get_track(trackuri)
+	tos = track.offline_status
+
 	if debug:
-	  tos = track.offline_status
 	  print "Track offline status:" + str(tos)
       
 	  #offlinestatus = playlist.offline_status
-	  offlinestatus=trackofflinestatus
+	  offlinestatus=tos
 	  offlinetxt=""
 	  if offlinestatus == 0:
 		  offlinetxt="Not available offline"
@@ -481,6 +485,7 @@ def offline_update(session):
 	      print "Offline status" + str(offlinestatus) + ":" + offlinetxt
 	  if gui=="tk":
 	      lblOffline["text"]= offlinetxt
+	  
       else:
 	if debug:
 	  print "Trackuri not defined yet"
@@ -611,8 +616,12 @@ def cleanexit():
     file.write("log=" + str(log)+"\n")
 
     file.close()
-    
-    print "Bye!"
+    if debug: 
+	print "Bye!"
+    if gui=="ILI9341":
+	display.clear()
+    	draw_rotated_text(disp.buffer, 1, 'Bye!', (posline1), 90, font, fill=(255,0,0))	
+
     sys.exit(1)
 
 def keyinput(event):
@@ -636,7 +645,7 @@ def keyinput(event):
         onoffline()
 
 def updateGui():
-    global artistname, onlinetext, offlinetxt, trackname, errortext, plnameenc, albumname, lblOffline
+    global artistname, onlinetext, offlinetext, trackname, errortext, plnameenc, albumname, lblOffline
     global lstatus
     #print "In updateGui"
 
@@ -652,7 +661,7 @@ def updateGui():
     
     if tts>0:
         dltext=" " + str(tts) + " left"
-        #print str(dltext)
+        print str(dltext)
 	#if gui=="tk":
 	#	lblOffline["bg"]='Red'
 		
@@ -681,6 +690,8 @@ def updateGui():
 	print "Offline: " + str(offlinetxt + dltext)
 	print "Spotonline: " + str(onlinetext)
 	print "Error: " + str(errortext)
+	print "dltext: " + str(dltext)
+	print "Tracks to download: " + str(tts)
 
 	
     if gui=="tk":
@@ -699,13 +710,13 @@ def updateGui():
 	root.after(1000, updateGui)
     elif gui=="ILI9341":
 	disp.clear()
-	draw_rotated_text(disp.buffer, "Artist: " + artistname, (posline1), 90, font, fill=(255,0,0))	
-	draw_rotated_text(disp.buffer, "Album: " + albumname, (posline2), 90, font, fill=(255,0,0))	
-	draw_rotated_text(disp.buffer, "Track: " + trackname, (posline3), 90, font, fill=(255,0,0))	
-	draw_rotated_text(disp.buffer, "PL: " + plnameenc, (posline4), 90, font, fill=(255,0,0))	
-	draw_rotated_text(disp.buffer, onlinetext, (posline5), 90, font, fill=(255,0,0))	
-	draw_rotated_text(disp.buffer, offlinetxt, (posline6), 90, font, fill=(255,0,0))	
-	draw_rotated_text(disp.buffer, ps, (posline7), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, 1, "Artist: " + artistname, (posline1), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, 2, "Album: " + albumname, (posline2), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, 3, "Track: " + trackname, (posline3), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, 4, "PL: " + plnameenc, (posline4), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, 5, onlinetext, (posline5), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, 6, offlinetxt, (posline6), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, 7, ps, (posline7), 90, font, fill=(255,0,0))	
 	
 	#
 	# Add line for off/online
@@ -715,22 +726,30 @@ def updateGui():
 	disp.display()
 
 
-def draw_rotated_text(image, text, position, angle, font, fill=(255,255,255)):
+def draw_rotated_text(image, linenr, text, position, angle, font, fill=(255,255,255)):
 	# For graphical display
 	# Get rendered font width and height.
 	draw = ImageDraw.Draw(image)
 	width, height = draw.textsize(text, font=font)
-	#print "Width: " + str(width) # = text width
-	#print str(disp.width) # = real display width
-	#	half length of string = width / 2
 		
 	# Adjust label positions so text starts at left border 
-	# Make a öost of the position tuple, change value, and make a new tuple
+	# Make a list of the position tuple, change value, and make a new tuple
 	lst = list(position)
-	lst[1] = 320-width - 5
+	
+	# Special treat for line 6
+	if linenr==6:
+		# This line shall have a fixed position
+		print "line6"
+		lst[1]=10
+	else:
+		lst[1] = 320-width - 5
 	if lst[1]<0:
 		lst[1]=0
+	
 	position = tuple(lst)
+	
+	#print "Line: " + str(linenr)
+	#print "Position: " + str(position)
 	
 	"""print "pos0: " + str(position[0])
 	print "pos1: " + str(position[1])
@@ -748,7 +767,8 @@ def draw_rotated_text(image, text, position, angle, font, fill=(255,255,255)):
 
 def on_closing():
     cleanexit()
-    root.destroy()
+    if gui=="tk":
+	root.destroy()
 
 if __name__ == '__main__':
     #logging.basicConfig(level=logging.INFO)
@@ -848,10 +868,10 @@ if __name__ == '__main__':
 	posline3=(90,3)
 	posline4=(130,3)
 	posline5=(170,3)
-	posline6=(210,40)
+	posline6=(210,3)
 	posline7=(210,3)
 	
-	draw_rotated_text(disp.buffer, 'Autospot 1.0', (posline1), 90, font, fill=(255,0,0))	
+	draw_rotated_text(disp.buffer, 1, 'Autospot 1.0', (posline1), 90, font, fill=(255,0,0))	
 	disp.display()
 	
 	if debug:
@@ -897,10 +917,14 @@ if __name__ == '__main__':
     except ImportError:
         #logger.warning(
         #    'No audio sink found; audio playback unavailable.')
-	print "No audio sink found; audio playback unavailable."
-        sys.exit()
-        
+	if debug:
+		print "No audio sink found; audio playback unavailable."
+		if gui=="ILI9341":
+			draw_rotated_text(disp.buffer, 1, "Audio system error, bye!", (posline1), 90, font, fill=(255,0,0))	
+		elif gui=="tk":
+			infotext = "Audio system error, bye!"
 
+        sys.exit()
         
     try:
         username = settings.username
