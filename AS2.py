@@ -10,7 +10,6 @@
 # https://github.com/alastair/spotifile
 
 import os
-import logging
 import urllib2
 import threading
 import sys
@@ -20,6 +19,8 @@ import signal
 import time
 import spotify
 from time import sleep
+
+#import profile
 
 # Keyboard input
 import tty, termios
@@ -619,9 +620,12 @@ def cleanexit():
     if debug: 
 	print "Bye!"
     if gui=="ILI9341":
-	display.clear()
+	print "Bye on display"
+	disp.clear()
     	draw_rotated_text(disp.buffer, 1, 'Bye!', (posline1), 90, font, fill=(255,0,0))	
+	disp.display()
 
+    sys.stdout.flush()
     sys.exit(1)
 
 def keyinput(event):
@@ -770,6 +774,68 @@ def on_closing():
     if gui=="tk":
 	root.destroy()
 
+def initDisplay(gui):
+	if debug:
+		print "In initDisplay, gui=" + gui
+	if gui=="tk":
+		# Gui, uses Tkinter
+		try:
+			#from Tkinter import *
+			import tkinter
+		except:
+			print "Tkinter not available"
+			print "(sudo apt-get install python-tk)"
+			sys.exit()
+		root = Tk()
+		root.minsize(width=320, height=240)
+		root.maxsize(width=320, height=240)
+		root.wm_title("Autospot")
+		infotext = "6-Next tr 4-Prev tr 8-Next Pl 2-Prev pl 1-Download 5-Pause 3-On/Offline q-Quit"
+	elif gui=="text":
+		infotext = "6-Next tr 4-Prev tr 8-Next Pl 2-Prev pl 1-Download 5-Pause 3-On/Offline q-Quit"
+		print infotext    
+	elif gui=="ILI9341":
+		# https://learn.adafruit.com/user-space-spi-tft-python-library-ili9341-2-8/usage
+		#from PIL import Image
+		#from PIL import ImageDraw
+		from PIL import ImageFont
+		global disp, posline1, posline2, posline3,posline4,posline5,posline6, font
+		import Adafruit_ILI9341 as TFT
+		import Adafruit_GPIO as GPIO
+		import Adafruit_GPIO.SPI as SPI
+		
+		if debug:
+			print "Setting up graphical display"
+		
+		# Set up display
+		DC = 18
+		RST = 23
+		SPI_PORT = 0
+		SPI_DEVICE = 0
+		# Create TFT LCD display class.
+		disp = TFT.ILI9341(DC, rst=RST, spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE, max_speed_hz=64000000))
+
+		# Initialize display.
+		disp.begin()
+		disp.clear()
+		image = disp.buffer
+		font = ImageFont.truetype('OstrichSans-Heavy.otf', 30)
+
+		posline1=(10,3)	# Pos y,x, vertical/horizontal
+		posline2=(50,3)
+		posline3=(90,3)
+		posline4=(130,3)
+		posline5=(170,3)
+		posline6=(210,3)
+		posline7=(210,3)
+		
+		draw_rotated_text(disp.buffer, 1, 'Autospot 1.0', (posline1), 90, font, fill=(255,0,0))	
+		disp.display()
+		
+		if debug:
+			print "Done setting up graphical display"
+		
+    
 if __name__ == '__main__':
     #logging.basicConfig(level=logging.INFO)
     global playlistnr
@@ -783,22 +849,6 @@ if __name__ == '__main__':
     offlinetxt=""
     curtrack=""
     
-    """
-    # Check where we are
-    path = os.getcwd()
-    #print path
-    # The current dir is Autospot?
-    curdirArr = path.split("/")
-    levels=len(curdirArr)
-    #print levels
-    curdir=curdirArr[levels-1]
-    #print curdir
-    if (curdir == "AutoSpot"):
-        print "ok"
-    else:
-        os.chdir("AutoSpot")
-    """   
-    
     print "Welcome to Autospot"
     
     # Debug mode?
@@ -810,73 +860,22 @@ if __name__ == '__main__':
       print "Log mode enabled"	# Used for debugging, gives more info
       import logging
       logging.basicConfig(level=logging.DEBUG)
-    
-    # Which gui to use?
-    gui = settings.guitype
-    if debug:
-	print "Use gui: "+gui
 
     # Create Spotify session
     # Assuming a spotify_appkey.key in the current dir
     session = spotify.Session()
     spotonline=session.connection.state
 
-    if gui=="tk":
-        # Gui, uses Tkinter
-	try:
-		from Tkinter import *
-        except:
-		print "Tkinter not available"
-		print "(sudo apt-get install python-tk)"
-		sys.exit()
-	root = Tk()
-        root.minsize(width=320, height=240)
-        root.maxsize(width=320, height=240)
-        root.wm_title("Autospot")
-        infotext = "6-Next tr 4-Prev tr 8-Next Pl 2-Prev pl 1-Download 5-Pause 3-On/Offline q-Quit"
-    elif gui=="text":
-	        infotext = "6-Next tr 4-Prev tr 8-Next Pl 2-Prev pl 1-Download 5-Pause 3-On/Offline q-Quit"
-	        print infotext    
-    elif gui=="ILI9341":
-	# https://learn.adafruit.com/user-space-spi-tft-python-library-ili9341-2-8/usage
-	from PIL import Image
-	from PIL import ImageDraw
-	from PIL import ImageFont
-	import Adafruit_ILI9341 as TFT
-	import Adafruit_GPIO as GPIO
-	import Adafruit_GPIO.SPI as SPI
+    # Initialize display
+    # Which gui to use?
+    gui = settings.guitype
+    if debug:
+	print "Use gui: "+gui
 	
-	if debug:
-		print "Setting up graphical display"
-	
-	# Set up display
-	DC = 18
-	RST = 23
-	SPI_PORT = 0
-	SPI_DEVICE = 0
-	# Create TFT LCD display class.
-	disp = TFT.ILI9341(DC, rst=RST, spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE, max_speed_hz=64000000))
+    from PIL import Image
+    from PIL import ImageDraw
 
-	# Initialize display.
-	disp.begin()
-	disp.clear()
-	image = disp.buffer
-	font = ImageFont.truetype('OstrichSans-Heavy.otf', 30)
-
-	posline1=(10,3)	# Pos y,x, vertical/horizontal
-	posline2=(50,3)
-	posline3=(90,3)
-	posline4=(130,3)
-	posline5=(170,3)
-	posline6=(210,3)
-	posline7=(210,3)
-	
-	draw_rotated_text(disp.buffer, 1, 'Autospot 1.0', (posline1), 90, font, fill=(255,0,0))	
-	disp.display()
-	
-	if debug:
-		print "Done setting up graphical display"
-	
+    initDisplay(gui)
     # Check for internet connection
     # Use libspotifys online-check instead
     """
