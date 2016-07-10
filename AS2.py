@@ -22,6 +22,9 @@ from time import sleep
 
 #import profile
 
+# Multithreading
+from multiprocessing import Process
+
 # Keyboard input
 import tty, termios
 
@@ -542,6 +545,7 @@ def loadplaylists():
 	    sys.exit()
     #print container
     v=0
+    millis = int(round(time.time() * 1000))
     for items in container:
         left = str(items)[:14]
 	#print left
@@ -562,6 +566,8 @@ def loadplaylists():
                 print "localuri: " + str(localuri[1])
 
             v+=1
+    millisdone = int(round(time.time() * 1000))
+    print "Time: " + str(millisdone-millis)
 
 def conn_state_change(session):
     global lblSpotonline
@@ -799,7 +805,7 @@ def initDisplay(gui):
 		#from PIL import Image
 		#from PIL import ImageDraw
 		from PIL import ImageFont
-		global disp, posline1, posline2, posline3,posline4,posline5,posline6, font
+		global disp, posline1, posline2, posline3,posline4,posline5,posline6, posline7, font
 		import Adafruit_ILI9341 as TFT
 		import Adafruit_GPIO as GPIO
 		import Adafruit_GPIO.SPI as SPI
@@ -815,7 +821,8 @@ def initDisplay(gui):
 		# Create TFT LCD display class.
 		disp = TFT.ILI9341(DC, rst=RST, spi=SPI.SpiDev(SPI_PORT, SPI_DEVICE, max_speed_hz=64000000))
 
-		# Initialize display.
+		if debug:
+			print "Initialize display."
 		disp.begin()
 		disp.clear()
 		image = disp.buffer
@@ -829,6 +836,8 @@ def initDisplay(gui):
 		posline6=(210,3)
 		posline7=(210,3)
 		
+		if debug:
+			print "Show name"
 		draw_rotated_text(disp.buffer, 1, 'Autospot 1.0', (posline1), 90, font, fill=(255,0,0))	
 		disp.display()
 		
@@ -838,6 +847,7 @@ def initDisplay(gui):
     
 if __name__ == '__main__':
     #logging.basicConfig(level=logging.INFO)
+    
     global playlistnr
     global pl, artistname, trackindex, trackname, session, offlinetxt, container
     global lblSpotonline, lblOffline, curtrack, debug, log, trackuri
@@ -853,6 +863,10 @@ if __name__ == '__main__':
     
     # Debug mode?
     debug = settings.debug
+    
+    if debug:
+	starttime= int(round(time.time() * 1000)) # Save starttime to time execution of script (and optimize it)
+    
     log = settings.log
     if debug:
 	print "Debug mode"
@@ -871,11 +885,18 @@ if __name__ == '__main__':
     gui = settings.guitype
     if debug:
 	print "Use gui: "+gui
-	
-    from PIL import Image
-    from PIL import ImageDraw
+    
+    if gui=="ILI9341":
+	from PIL import Image
+	from PIL import ImageDraw
 
-    initDisplay(gui)
+    # Init display in a separate thread:
+    p1 = Process(target=initDisplay(gui))
+    p1.start()
+    #initDisplay(gui)
+
+
+
     # Check for internet connection
     # Use libspotifys online-check instead
     """
@@ -1053,6 +1074,8 @@ if __name__ == '__main__':
     trackuri = playlisturis[int(trackindex)]
     if debug:
       print "Going to play " + str(trackuri) 
+      stoptime= int(round(time.time() * 1000))
+      print "Started in: " + str(stoptime-starttime)
     play()
     
 
@@ -1138,5 +1161,4 @@ if __name__ == '__main__':
 		if(char == "5"):           
 		    # Pause player 
 		    playerPause()
-		
 
